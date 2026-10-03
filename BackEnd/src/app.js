@@ -1,8 +1,12 @@
 'use strict';
 const express = require('express');
+const defaultConfig = require('./config');
+const { createUsersRepo } = require('./users');
+const { createAuthRouter } = require('./routes/auth');
 
-// createApp takes the database helper as an argument so tests can pass a fake.
-function createApp({ db }) {
+// createApp takes the database helper (and optionally config and a users repo)
+// as arguments so tests can pass fakes.
+function createApp({ db, config = defaultConfig, users = createUsersRepo(db) }) {
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({ limit: '1mb' }));
@@ -23,6 +27,8 @@ function createApp({ db }) {
       return res.status(503).json({ status: 'error', database: 'down' });
     }
   });
+
+  app.use('/api/auth', createAuthRouter({ users, config }));
 
   app.use('/api', (req, res) => {
     res.status(404).json({ error: 'not_found' });

@@ -10,14 +10,17 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "jest"
+    "test": "jest",
+    "migrate": "node src/migrate.js"
   },
   "jest": {
     "testEnvironment": "node"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.3",
     "pg": "^8.16.0"
   },
   "devDependencies": {
