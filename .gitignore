@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+*_run_sheet.txt
+backup_*/
+src_deploy_*/
+.DS_Store
+Thumbs.db

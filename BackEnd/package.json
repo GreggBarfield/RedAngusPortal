@@ -1,0 +1,27 @@
+{
+  "name": "raaaa-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Red Angus Portal API",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "jest"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "pg": "^8.16.0"
+  },
+  "devDependencies": {
+    "jest": "^30.0.0",
+    "supertest": "^7.1.0"
+  }
+}

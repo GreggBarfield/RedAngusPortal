@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-lg: 0.625rem;
+  --radius-md: calc(0.625rem - 2px);
+  --radius-sm: calc(0.625rem - 4px);
+}
+
+:root {
+  --background: oklch(0.99 0.004 80);
+  --foreground: oklch(0.22 0.02 40);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.02 40);
+  --primary: oklch(0.45 0.16 28);
+  --primary-foreground: oklch(0.98 0.01 80);
+  --secondary: oklch(0.95 0.012 70);
+  --secondary-foreground: oklch(0.3 0.03 40);
+  --muted: oklch(0.96 0.008 70);
+  --muted-foreground: oklch(0.5 0.02 50);
+  --accent: oklch(0.93 0.03 40);
+  --accent-foreground: oklch(0.3 0.06 30);
+  --destructive: oklch(0.55 0.2 27);
+  --border: oklch(0.9 0.012 70);
+  --input: oklch(0.9 0.012 70);
+  --ring: oklch(0.45 0.16 28);
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
