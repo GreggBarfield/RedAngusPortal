@@ -3,10 +3,18 @@ const express = require('express');
 const defaultConfig = require('./config');
 const { createUsersRepo } = require('./users');
 const { createAuthRouter } = require('./routes/auth');
+const { createBarnsRouter } = require('./routes/barns');
+const { createBtn } = require('./btn');
+const { createBarnsRepo } = require('./barns');
 
-// createApp takes the database helper (and optionally config and a users repo)
-// as arguments so tests can pass fakes.
-function createApp({ db, config = defaultConfig, users = createUsersRepo(db) }) {
+// createApp takes the database helper (and optionally config, a users repo and
+// a barns repo) as arguments so tests can pass fakes.
+function createApp({
+  db,
+  config = defaultConfig,
+  users = createUsersRepo(db),
+  barns = createBarnsRepo({ db, btn: createBtn(config) }),
+}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({ limit: '1mb' }));
@@ -29,6 +37,7 @@ function createApp({ db, config = defaultConfig, users = createUsersRepo(db) }) 
   });
 
   app.use('/api/auth', createAuthRouter({ users, config }));
+  app.use('/api/barns', createBarnsRouter({ barns, users, config }));
 
   app.use('/api', (req, res) => {
     res.status(404).json({ error: 'not_found' });

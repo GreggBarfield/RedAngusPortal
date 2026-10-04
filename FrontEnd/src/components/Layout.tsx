@@ -10,9 +10,14 @@ export default function Layout() {
     <div className="min-h-screen">
       <header className="border-b">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
-          <Link to="/" className="font-semibold tracking-tight">
-            Red Angus Portal
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link to="/" className="font-semibold tracking-tight">
+              Red Angus Portal
+            </Link>
+            <Link to="/barns" className="text-sm text-muted-foreground hover:text-foreground">
+              Sale barns
+            </Link>
+          </div>
           <nav className="flex items-center gap-2" aria-label="Account">
             {loading ? null : user ? (
               <>

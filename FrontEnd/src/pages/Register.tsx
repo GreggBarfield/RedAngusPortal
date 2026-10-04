@@ -14,6 +14,7 @@ export default function Register() {
   const [displayName, setDisplayName] = useState('')
   const [membershipNumber, setMembershipNumber] = useState('')
   const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
   const [fields, setFields] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -24,6 +25,10 @@ export default function Register() {
     e.preventDefault()
     setError('')
     setFields({})
+    if (password !== confirm) {
+      setFields({ confirm: 'The two passwords do not match.' })
+      return
+    }
     setBusy(true)
     try {
       await register({
@@ -89,6 +94,15 @@ export default function Register() {
               onChange={setPassword}
               error={fields.password}
               hint="At least 10 characters."
+              autoComplete="new-password"
+            />
+            <FormField
+              id="confirm"
+              label="Confirm password"
+              type="password"
+              value={confirm}
+              onChange={setConfirm}
+              error={fields.confirm}
               autoComplete="new-password"
             />
             {error && (

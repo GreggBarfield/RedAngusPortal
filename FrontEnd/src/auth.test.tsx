@@ -73,8 +73,23 @@ describe('auth screens', () => {
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.com' } })
     fireEvent.change(screen.getByLabelText('Membership number'), { target: { value: 'RA-123' } })
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'longenoughpw' } })
+    fireEvent.change(screen.getByLabelText('Confirm password'), { target: { value: 'longenoughpw' } })
     fireEvent.click(screen.getByRole('button', { name: /create account/i }))
     expect(await screen.findByText(/already registered/i)).toBeInTheDocument()
+  })
+
+  it('does not call the API when the two passwords differ', async () => {
+    const fetchMock = vi.fn(() => json(201, {}))
+    vi.stubGlobal('fetch', fetchMock)
+    mount('/register')
+    fireEvent.change(screen.getByLabelText('Name or ranch'), { target: { value: 'Test Ranch' } })
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'a@b.com' } })
+    fireEvent.change(screen.getByLabelText('Membership number'), { target: { value: 'RA-123' } })
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'longenoughpw' } })
+    fireEvent.change(screen.getByLabelText('Confirm password'), { target: { value: 'different-pw-here' } })
+    fireEvent.click(screen.getByRole('button', { name: /create account/i }))
+    expect(await screen.findByText(/do not match/i)).toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('restores a saved session from /api/auth/me and signs out', async () => {

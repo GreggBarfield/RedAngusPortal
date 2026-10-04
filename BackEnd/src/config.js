@@ -9,6 +9,10 @@ const config = {
   port: Number(process.env.PORT) || 4200,
   databaseUrl: process.env.DATABASE_URL || '',
   jwtSecret: process.env.JWT_SECRET || '',
+  // BTN's catalog database: a read-only login, and a login that can change
+  // only the four barn contact columns.
+  barnsDatabaseUrl: process.env.BARNS_DATABASE_URL || '',
+  barnsWriteDatabaseUrl: process.env.BARNS_WRITE_DATABASE_URL || '',
 };
 
 module.exports = config;

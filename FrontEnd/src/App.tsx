@@ -3,6 +3,8 @@ import Layout from '@/components/Layout'
 import RequireAuth from '@/components/RequireAuth'
 import { AuthProvider } from '@/lib/auth'
 import Account from '@/pages/Account'
+import BarnDetail from '@/pages/BarnDetail'
+import Barns from '@/pages/Barns'
 import Home from '@/pages/Home'
 import Login from '@/pages/Login'
 import NotFound from '@/pages/NotFound'
@@ -14,6 +16,8 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Home />} />
+          <Route path="/barns" element={<Barns />} />
+          <Route path="/barns/:id" element={<BarnDetail />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route element={<RequireAuth />}>
