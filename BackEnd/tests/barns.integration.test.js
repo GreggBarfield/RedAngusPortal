@@ -96,6 +96,23 @@ maybe('barns repo (real Postgres)', () => {
     expect((await repo.get(1)).auc_email).toBeNull();
   });
 
+  test('empty strings in BTN count as empty: no false warning, no false change', async () => {
+    await btnClient.query("UPDATE public.auction_barns SET auc_fax = '', auc_email = '' WHERE auction_no = 3");
+    const r = await repo.updateContact({
+      auctionNo: 3,
+      changes: { fax: null, email: null },
+      expected: { fax: '', email: '' },
+      overwrite: false,
+      userId,
+    });
+    expect(r.status).toBe('ok');
+    expect(r.changed).toEqual([]);
+    expect((await repo.get(3)).auc_fax).toBe('');
+    const set = await repo.updateContact({ auctionNo: 3, changes: { fax: '979-555-0300' }, expected: { fax: null }, overwrite: false, userId });
+    expect(set.status).toBe('ok');
+    expect(set.changed).toHaveLength(1);
+  });
+
   test('settings upsert', async () => {
     await repo.saveSettings(2, { sendMethod: 'fax', enabled: false, notes: 'n' }, userId);
     await repo.saveSettings(2, { sendMethod: null, enabled: true, notes: null }, userId);

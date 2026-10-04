@@ -15,8 +15,15 @@ function likePattern(q) {
   return '%' + q.replace(/[\\%_]/g, (c) => '\\' + c) + '%';
 }
 
+// BTN stores some empty contact fields as '' and others as NULL. Both mean "nothing".
+function norm(v) {
+  if (v == null) return null;
+  const t = String(v).trim();
+  return t === '' ? null : t;
+}
+
 function same(a, b) {
-  return (a == null ? null : String(a)) === (b == null ? null : String(b));
+  return norm(a) === norm(b);
 }
 
 // All SQL for barns. `btn` is BTN's catalog database (read, and a separate
