@@ -206,3 +206,114 @@ export interface BarnLogEntry {
 export function getBarnLog(id: number, token: string): Promise<{ log: BarnLogEntry[] }> {
   return request<{ log: BarnLogEntry[] }>('/api/barns/' + id + '/log', {}, token)
 }
+
+export type ListingKind = 'bull' | 'cow' | 'heifer' | 'bred_heifer' | 'pair'
+export type ListingStatus = 'pending' | 'approved' | 'rejected' | 'sold' | 'withdrawn'
+
+export interface Listing {
+  id: string
+  kind: ListingKind
+  name: string
+  regNumber: string | null
+  birthDate: string
+  sireName: string | null
+  sireReg: string | null
+  damName: string | null
+  damReg: string | null
+  birthWeight: number | null
+  weaningWeight: number | null
+  yearlingWeight: number | null
+  scrotal: number | null
+  bredTo: string | null
+  dueDate: string | null
+  headCount: number
+  city: string
+  state: string
+  askingPrice: number | null
+  callForPrice: boolean
+  description: string | null
+  status: ListingStatus
+  approvedAt: string | null
+  createdAt: string
+  // Signed-in users:
+  contactName?: string
+  contactPhone?: string
+  contactEmail?: string
+  sellerName?: string
+  mine?: boolean
+  // Owner and staff:
+  tag?: string | null
+  zip?: string
+  reviewNote?: string | null
+  updatedAt?: string
+}
+
+export interface ListingList {
+  total: number
+  page: number
+  pageSize: number
+  listings: Listing[]
+}
+
+export interface ListingQuery {
+  q?: string
+  kind?: string
+  state?: string
+  page?: number
+}
+
+export function listListings(query: ListingQuery, token?: string | null): Promise<ListingList> {
+  const p = new URLSearchParams()
+  if (query.q) p.set('q', query.q)
+  if (query.kind) p.set('kind', query.kind)
+  if (query.state) p.set('state', query.state)
+  if (query.page && query.page > 1) p.set('page', String(query.page))
+  const qs = p.toString()
+  return request<ListingList>('/api/listings' + (qs ? '?' + qs : ''), {}, token)
+}
+
+export function getListing(id: string, token?: string | null): Promise<{ listing: Listing }> {
+  return request<{ listing: Listing }>('/api/listings/' + encodeURIComponent(id), {}, token)
+}
+
+export function getMyListings(token: string): Promise<{ listings: Listing[] }> {
+  return request<{ listings: Listing[] }>('/api/listings/mine', {}, token)
+}
+
+export type ListingInput = Record<string, string | boolean>
+
+export function createListing(input: ListingInput, token: string): Promise<{ listing: Listing }> {
+  return request<{ listing: Listing }>('/api/listings', { method: 'POST', body: JSON.stringify(input) }, token)
+}
+
+export function updateListing(id: string, input: ListingInput, token: string): Promise<{ listing: Listing }> {
+  return request<{ listing: Listing }>(
+    '/api/listings/' + encodeURIComponent(id),
+    { method: 'PUT', body: JSON.stringify(input) },
+    token,
+  )
+}
+
+export function closeListing(id: string, status: 'sold' | 'withdrawn', token: string): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>(
+    '/api/listings/' + encodeURIComponent(id) + '/close',
+    { method: 'POST', body: JSON.stringify({ status }) },
+    token,
+  )
+}
+
+export function getReviewQueue(status: 'pending' | 'approved' | 'rejected', token: string): Promise<{ listings: Listing[] }> {
+  return request<{ listings: Listing[] }>('/api/listings/queue?status=' + status, {}, token)
+}
+
+export function getPendingCount(token: string): Promise<{ pending: number }> {
+  return request<{ pending: number }>('/api/listings/pending-count', {}, token)
+}
+
+export function reviewListing(id: string, decision: 'approve' | 'reject', note: string, token: string) {
+  return request<{ ok: boolean }>(
+    '/api/listings/' + encodeURIComponent(id) + '/review',
+    { method: 'POST', body: JSON.stringify({ decision, note }) },
+    token,
+  )
+}

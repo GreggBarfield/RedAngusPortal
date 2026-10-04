@@ -22,7 +22,7 @@ describe('Home page', () => {
     expect(
       screen.getByRole('heading', { name: 'Red Angus Marketing Portal' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /search cattle/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /search cattle/i })).toBeInTheDocument()
   })
 
   it('shows connected when the API answers', async () => {

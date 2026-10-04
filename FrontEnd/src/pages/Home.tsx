@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Search, ListPlus } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -34,11 +35,15 @@ export default function Home() {
       </p>
 
       <div className="mt-8 flex gap-3">
-        <Button size="lg" disabled>
-          <Search className="size-4" /> Search cattle
+        <Button asChild size="lg">
+          <Link to="/listings">
+            <Search className="size-4" /> Search cattle
+          </Link>
         </Button>
-        <Button size="lg" variant="outline" disabled>
-          <ListPlus className="size-4" /> List your cattle
+        <Button asChild size="lg" variant="outline">
+          <Link to="/listings/new">
+            <ListPlus className="size-4" /> List your cattle
+          </Link>
         </Button>
       </div>
 

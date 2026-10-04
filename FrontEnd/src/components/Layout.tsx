@@ -1,10 +1,31 @@
-import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
+import { getPendingCount } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 
 export default function Layout() {
-  const { user, loading, logout } = useAuth()
+  const { user, token, loading, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const [pending, setPending] = useState(0)
+  const isStaff = user?.role === 'staff'
+
+  useEffect(() => {
+    if (!isStaff || !token) {
+      setPending(0)
+      return
+    }
+    let cancelled = false
+    getPendingCount(token)
+      .then((r) => {
+        if (!cancelled) setPending(r.pending)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [isStaff, token, location.pathname])
 
   return (
     <div className="min-h-screen">
@@ -14,9 +35,22 @@ export default function Layout() {
             <Link to="/" className="font-semibold tracking-tight">
               Red Angus Portal
             </Link>
+            <Link to="/listings" className="text-sm text-muted-foreground hover:text-foreground">
+              Cattle
+            </Link>
             <Link to="/barns" className="text-sm text-muted-foreground hover:text-foreground">
               Sale barns
             </Link>
+            {user && (
+              <Link to="/my-listings" className="text-sm text-muted-foreground hover:text-foreground">
+                My listings
+              </Link>
+            )}
+            {isStaff && (
+              <Link to="/staff/review" className="text-sm text-muted-foreground hover:text-foreground">
+                Review{pending > 0 ? ` (${pending})` : ''}
+              </Link>
+            )}
           </div>
           <nav className="flex items-center gap-2" aria-label="Account">
             {loading ? null : user ? (

@@ -21,7 +21,7 @@ maybe('barns repo (real Postgres)', () => {
   beforeAll(async () => {
     app = new Client({ connectionString: url });
     await app.connect();
-    await app.query('DROP TABLE IF EXISTS barn_contact_log, barn_settings, users, schema_migrations CASCADE');
+    await app.query('DROP TABLE IF EXISTS listings, barn_contact_log, barn_settings, users, schema_migrations CASCADE');
     await runMigrations({ connectionString: url, log: quiet });
     userId = (
       await app.query(
@@ -49,7 +49,7 @@ maybe('barns repo (real Postgres)', () => {
     });
   });
   afterAll(async () => {
-    await app.query('DROP TABLE IF EXISTS barn_contact_log, barn_settings, users, schema_migrations CASCADE');
+    await app.query('DROP TABLE IF EXISTS listings, barn_contact_log, barn_settings, users, schema_migrations CASCADE');
     await btnClient.query('DROP TABLE IF EXISTS public.auction_barns');
     await app.end();
     await btnClient.end();
