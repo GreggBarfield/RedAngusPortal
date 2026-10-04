@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { getPendingCount } from '@/lib/api'
+import { getFeederPendingCount, getPendingCount } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 
 export default function Layout() {
@@ -17,9 +17,9 @@ export default function Layout() {
       return
     }
     let cancelled = false
-    getPendingCount(token)
-      .then((r) => {
-        if (!cancelled) setPending(r.pending)
+    Promise.all([getPendingCount(token), getFeederPendingCount(token)])
+      .then(([a, b]) => {
+        if (!cancelled) setPending(a.pending + b.pending)
       })
       .catch(() => {})
     return () => {
@@ -37,6 +37,9 @@ export default function Layout() {
             </Link>
             <Link to="/listings" className="text-sm text-muted-foreground hover:text-foreground">
               Cattle
+            </Link>
+            <Link to="/feeders" className="text-sm text-muted-foreground hover:text-foreground">
+              Feeders
             </Link>
             <Link to="/barns" className="text-sm text-muted-foreground hover:text-foreground">
               Sale barns

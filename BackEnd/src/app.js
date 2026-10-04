@@ -8,15 +8,18 @@ const { createBtn } = require('./btn');
 const { createBarnsRepo } = require('./barns');
 const { createListingsRouter } = require('./routes/listings');
 const { createListingsRepo } = require('./listings');
+const { createFeedersRouter } = require('./routes/feeders');
+const { createFeedersRepo } = require('./feeders');
 
 // createApp takes the database helper (and optionally config, a users repo and
-// a barns repo and a listings repo) as arguments so tests can pass fakes.
+// a barns repo, a listings repo and a feeders repo) as arguments so tests can pass fakes.
 function createApp({
   db,
   config = defaultConfig,
   users = createUsersRepo(db),
   barns = createBarnsRepo({ db, btn: createBtn(config) }),
   listings = createListingsRepo(db),
+  feeders = createFeedersRepo(db),
 }) {
   const app = express();
   app.disable('x-powered-by');
@@ -42,6 +45,7 @@ function createApp({
   app.use('/api/auth', createAuthRouter({ users, config }));
   app.use('/api/barns', createBarnsRouter({ barns, users, config }));
   app.use('/api/listings', createListingsRouter({ listings, users, config }));
+  app.use('/api/feeders', createFeedersRouter({ feeders, users, config }));
 
   app.use('/api', (req, res) => {
     res.status(404).json({ error: 'not_found' });

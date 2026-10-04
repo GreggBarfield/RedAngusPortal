@@ -15,10 +15,10 @@ maybe('migrations and users table (real Postgres)', () => {
   beforeAll(async () => {
     client = new Client({ connectionString: url });
     await client.connect();
-    await client.query('DROP TABLE IF EXISTS listings, barn_contact_log, barn_settings, users, schema_migrations CASCADE');
+    await client.query('DROP TABLE IF EXISTS feeder_lots, listings, barn_contact_log, barn_settings, users, schema_migrations CASCADE');
   });
   afterAll(async () => {
-    await client.query('DROP TABLE IF EXISTS listings, barn_contact_log, barn_settings, users, schema_migrations CASCADE');
+    await client.query('DROP TABLE IF EXISTS feeder_lots, listings, barn_contact_log, barn_settings, users, schema_migrations CASCADE');
     await client.end();
   });
 

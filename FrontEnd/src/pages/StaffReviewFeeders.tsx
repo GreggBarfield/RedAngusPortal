@@ -4,18 +4,19 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
-import { ApiError, getReviewQueue, reviewListing } from '@/lib/api'
-import type { Listing } from '@/lib/api'
+import { ApiError, getFeederQueue, reviewFeeder } from '@/lib/api'
+import type { FeederLot } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
-import { KIND_LABELS, formatDate, formatPrice } from '@/lib/listings'
+import { SEX_LABELS, formatFeederPrice, weightText } from '@/lib/feeders'
+import { formatDate } from '@/lib/listings'
 
 type Tab = 'pending' | 'approved' | 'rejected'
 const TAB_LABELS: Record<Tab, string> = { pending: 'Waiting', approved: 'Live', rejected: 'Not approved' }
 
-export default function StaffReview() {
+export default function StaffReviewFeeders() {
   const { user, token } = useAuth()
   const [tab, setTab] = useState<Tab>('pending')
-  const [items, setItems] = useState<Listing[] | null>(null)
+  const [items, setItems] = useState<FeederLot[] | null>(null)
   const [error, setError] = useState('')
   const [rejecting, setRejecting] = useState<string | null>(null)
   const [note, setNote] = useState('')
@@ -25,8 +26,8 @@ export default function StaffReview() {
   const load = useCallback(async () => {
     if (!token) return
     try {
-      const r = await getReviewQueue(tab, token)
-      setItems(r.listings)
+      const r = await getFeederQueue(tab, token)
+      setItems(r.lots)
       setError('')
     } catch {
       setError('Could not load the queue. Try again.')
@@ -46,14 +47,14 @@ export default function StaffReview() {
     }
     setBusy(true)
     try {
-      await reviewListing(id, decision, decision === 'reject' ? note : '', token)
+      await reviewFeeder(id, decision, decision === 'reject' ? note : '', token)
       setRejecting(null)
       setNote('')
       setNoteError('')
       await load()
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
-        setError('Someone else already changed this listing. The list was refreshed.')
+        setError('Someone else already changed this lot. The list was refreshed.')
         await load()
       } else {
         setError('Could not save that. Try again.')
@@ -74,10 +75,10 @@ export default function StaffReview() {
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
-      <h1 className="text-3xl font-semibold tracking-tight">Review listings</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">Review feeder lots</h1>
       <p className="mt-1 text-sm">
-        <Link to="/staff/review-feeders" className="text-primary underline">
-          Review feeder lots instead
+        <Link to="/staff/review" className="text-primary underline">
+          Review breeding cattle instead
         </Link>
       </p>
       <div className="mt-4 grid max-w-xs gap-1.5">
@@ -105,16 +106,16 @@ export default function StaffReview() {
             <CardContent className="grid gap-3 py-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <Link to={`/listings/${l.id}`} className="text-lg font-medium text-primary underline">
-                    {l.name}
+                  <Link to={`/feeders/${l.id}`} className="text-lg font-medium text-primary underline">
+                    {l.title}
                   </Link>
                   <p className="text-sm text-muted-foreground">
-                    {KIND_LABELS[l.kind]} - born {formatDate(l.birthDate)} - {l.city}, {l.state} - {formatPrice(l)}
+                    {l.headCount} head {SEX_LABELS[l.sex].toLowerCase()} - {weightText(l)} - {l.city}, {l.state} - {formatFeederPrice(l)}
                   </p>
+                  {l.availableDate && <p className="text-sm text-muted-foreground">Available {formatDate(l.availableDate)}</p>}
                   <p className="text-sm text-muted-foreground">
                     From {l.sellerName} - {l.contactPhone} - {l.contactEmail}
                   </p>
-                  {l.regNumber && <p className="text-sm">Reg. {l.regNumber}</p>}
                   {l.reviewNote && <p className="mt-1 text-sm">Note: {l.reviewNote}</p>}
                 </div>
                 <div className="flex gap-2">

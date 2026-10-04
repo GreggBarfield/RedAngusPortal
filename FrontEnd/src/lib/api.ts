@@ -317,3 +317,119 @@ export function reviewListing(id: string, decision: 'approve' | 'reject', note: 
     token,
   )
 }
+
+export type FeederSex = 'steers' | 'heifers' | 'bulls' | 'mixed'
+export type HornStatus = 'polled' | 'dehorned' | 'horned' | 'mixed'
+export type SaleType = 'private_treaty' | 'contract' | 'video'
+export type PriceBasis = 'per_cwt' | 'per_head'
+
+export interface FeederLot {
+  id: string
+  title: string
+  headCount: number
+  sex: FeederSex
+  avgWeight: number
+  weightLow: number | null
+  weightHigh: number | null
+  breed: string | null
+  ageMonths: number | null
+  weaned: boolean
+  weanedDays: number | null
+  healthProgram: string | null
+  hornStatus: HornStatus | null
+  bunkBroke: boolean
+  siredBy: string | null
+  saleType: SaleType | null
+  availableDate: string | null
+  city: string
+  state: string
+  priceBasis: PriceBasis | null
+  askingPrice: number | null
+  callForPrice: boolean
+  description: string | null
+  status: ListingStatus
+  approvedAt: string | null
+  createdAt: string
+  // Signed-in users:
+  contactName?: string
+  contactPhone?: string
+  contactEmail?: string
+  sellerName?: string
+  mine?: boolean
+  // Owner and staff:
+  zip?: string
+  reviewNote?: string | null
+  updatedAt?: string
+}
+
+export interface FeederList {
+  total: number
+  page: number
+  pageSize: number
+  lots: FeederLot[]
+}
+
+export interface FeederQuery {
+  q?: string
+  sex?: string
+  state?: string
+  minWeight?: string
+  maxWeight?: string
+  page?: number
+}
+
+export function listFeeders(query: FeederQuery, token?: string | null): Promise<FeederList> {
+  const p = new URLSearchParams()
+  if (query.q) p.set('q', query.q)
+  if (query.sex) p.set('sex', query.sex)
+  if (query.state) p.set('state', query.state)
+  if (query.minWeight) p.set('minWeight', query.minWeight)
+  if (query.maxWeight) p.set('maxWeight', query.maxWeight)
+  if (query.page && query.page > 1) p.set('page', String(query.page))
+  const qs = p.toString()
+  return request<FeederList>('/api/feeders' + (qs ? '?' + qs : ''), {}, token)
+}
+
+export function getFeeder(id: string, token?: string | null): Promise<{ lot: FeederLot }> {
+  return request<{ lot: FeederLot }>('/api/feeders/' + encodeURIComponent(id), {}, token)
+}
+
+export function getMyFeeders(token: string): Promise<{ lots: FeederLot[] }> {
+  return request<{ lots: FeederLot[] }>('/api/feeders/mine', {}, token)
+}
+
+export function createFeeder(input: ListingInput, token: string): Promise<{ lot: FeederLot }> {
+  return request<{ lot: FeederLot }>('/api/feeders', { method: 'POST', body: JSON.stringify(input) }, token)
+}
+
+export function updateFeeder(id: string, input: ListingInput, token: string): Promise<{ lot: FeederLot }> {
+  return request<{ lot: FeederLot }>(
+    '/api/feeders/' + encodeURIComponent(id),
+    { method: 'PUT', body: JSON.stringify(input) },
+    token,
+  )
+}
+
+export function closeFeeder(id: string, status: 'sold' | 'withdrawn', token: string): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>(
+    '/api/feeders/' + encodeURIComponent(id) + '/close',
+    { method: 'POST', body: JSON.stringify({ status }) },
+    token,
+  )
+}
+
+export function getFeederQueue(status: 'pending' | 'approved' | 'rejected', token: string): Promise<{ lots: FeederLot[] }> {
+  return request<{ lots: FeederLot[] }>('/api/feeders/queue?status=' + status, {}, token)
+}
+
+export function getFeederPendingCount(token: string): Promise<{ pending: number }> {
+  return request<{ pending: number }>('/api/feeders/pending-count', {}, token)
+}
+
+export function reviewFeeder(id: string, decision: 'approve' | 'reject', note: string, token: string) {
+  return request<{ ok: boolean }>(
+    '/api/feeders/' + encodeURIComponent(id) + '/review',
+    { method: 'POST', body: JSON.stringify({ decision, note }) },
+    token,
+  )
+}

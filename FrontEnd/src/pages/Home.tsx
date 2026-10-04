@@ -34,10 +34,15 @@ export default function Home() {
         embryos, all in one place.
       </p>
 
-      <div className="mt-8 flex gap-3">
+      <div className="mt-8 flex flex-wrap gap-3">
         <Button asChild size="lg">
           <Link to="/listings">
             <Search className="size-4" /> Search cattle
+          </Link>
+        </Button>
+        <Button asChild size="lg" variant="outline">
+          <Link to="/feeders">
+            <Search className="size-4" /> Feeder cattle
           </Link>
         </Button>
         <Button asChild size="lg" variant="outline">
