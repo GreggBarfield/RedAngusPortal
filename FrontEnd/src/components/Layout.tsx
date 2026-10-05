@@ -12,7 +12,13 @@ function Menu({ label, children }: { label: string; children: ReactNode }) {
   const box = useRef<HTMLDivElement>(null)
   const location = useLocation()
 
-  useEffect(() => setOpen(false), [location.pathname])
+  // Close when the page changes (not on first appearance, which could undo a quick first click).
+  const lastPath = useRef(location.pathname)
+  useEffect(() => {
+    if (lastPath.current === location.pathname) return
+    lastPath.current = location.pathname
+    setOpen(false)
+  }, [location.pathname])
   useEffect(() => {
     if (!open) return
     const away = (e: MouseEvent) => {
