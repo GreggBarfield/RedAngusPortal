@@ -13,6 +13,9 @@ const config = {
   // only the four barn contact columns.
   barnsDatabaseUrl: process.env.BARNS_DATABASE_URL || '',
   barnsWriteDatabaseUrl: process.env.BARNS_WRITE_DATABASE_URL || '',
+  // BTN's pick lists and zip codes (breeds, programs, vaccine products, auction
+  // markets, EPD traits): read, plus adding new vaccine products and auctions.
+  refDatabaseUrl: process.env.REF_DATABASE_URL || '',
 };
 
 module.exports = config;

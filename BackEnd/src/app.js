@@ -10,16 +10,31 @@ const { createListingsRouter } = require('./routes/listings');
 const { createListingsRepo } = require('./listings');
 const { createFeedersRouter } = require('./routes/feeders');
 const { createFeedersRepo } = require('./feeders');
+const { createRefRepo } = require('./ref');
+const { createRefRouter } = require('./routes/ref');
+const { createFeederListingsRepo } = require('./feederListings');
+const { createFeederListingsRouter } = require('./routes/feederListings');
+const { createBreedingListingsRepo } = require('./breedingListings');
+const { createBreedingListingsRouter } = require('./routes/breedingListings');
+const { createSavedFiltersRepo } = require('./savedFilters');
+const { createSavedFiltersRouter } = require('./routes/savedFilters');
 
-// createApp takes the database helper (and optionally config, a users repo and
-// a barns repo, a listings repo and a feeders repo) as arguments so tests can pass fakes.
+// createApp takes the database helper (and optionally config and any repo) as
+// arguments so tests can pass fakes. The old feeders/listings repos serve the
+// current screens; feederListings/breedingListings serve the new forms.
 function createApp({
   db,
   config = defaultConfig,
   users = createUsersRepo(db),
-  barns = createBarnsRepo({ db, btn: createBtn(config) }),
+  btn = createBtn(config),
+  barns = createBarnsRepo({ db, btn }),
   listings = createListingsRepo(db),
   feeders = createFeedersRepo(db),
+  ref = createRefRepo({ btn }),
+  feederListings = createFeederListingsRepo(db),
+  breedingListings = createBreedingListingsRepo(db),
+  savedFilters = createSavedFiltersRepo(db),
+  now,
 }) {
   const app = express();
   app.disable('x-powered-by');
@@ -46,6 +61,15 @@ function createApp({
   app.use('/api/barns', createBarnsRouter({ barns, users, config }));
   app.use('/api/listings', createListingsRouter({ listings, users, config }));
   app.use('/api/feeders', createFeedersRouter({ feeders, users, config }));
+
+  // New listing forms, pick lists from BTN, and saved searches.
+  const geo = { available: () => ref.available(), zip: (z) => ref.zip(z) };
+  const groupCounter = async (ownerId) =>
+    (await feederListings.countByOwner(ownerId)) + (await breedingListings.countByOwner(ownerId));
+  app.use('/api/ref', createRefRouter({ ref, users, config, groupCounter, now }));
+  app.use('/api/feeder-listings', createFeederListingsRouter({ feeders: feederListings, users, config, geo, now }));
+  app.use('/api/breeding-listings', createBreedingListingsRouter({ breeding: breedingListings, users, config, geo, now }));
+  app.use('/api/saved-filters', createSavedFiltersRouter({ filters: savedFilters, users, config }));
 
   app.use('/api', (req, res) => {
     res.status(404).json({ error: 'not_found' });

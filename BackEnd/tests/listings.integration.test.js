@@ -33,14 +33,14 @@ maybe('listings repo (real Postgres)', () => {
   beforeAll(async () => {
     client = new Client({ connectionString: url });
     await client.connect();
-    await client.query('DROP TABLE IF EXISTS feeder_lots, listings, barn_contact_log, barn_settings, users, schema_migrations CASCADE');
+    await client.query('DROP TABLE IF EXISTS saved_filters, breeding_listing_epds, breeding_listing_breeds, breeding_listings, feeder_listing_vaccinations, feeder_listing_programs, feeder_listing_breeds, feeder_listings, feeder_lots, listings, barn_contact_log, barn_settings, users, schema_migrations CASCADE');
     await runMigrations({ connectionString: url, log: quiet });
     ownerId = (await client.query("INSERT INTO users (email, password_hash, display_name, membership_number) VALUES ('o@x.com','x','Owner','1') RETURNING id")).rows[0].id;
     staffId = (await client.query("INSERT INTO users (email, password_hash, display_name, membership_number, role) VALUES ('s@x.com','x','Staff','2','staff') RETURNING id")).rows[0].id;
     repo = createListingsRepo({ query: (t, p) => client.query(t, p) });
   });
   afterAll(async () => {
-    await client.query('DROP TABLE IF EXISTS feeder_lots, listings, barn_contact_log, barn_settings, users, schema_migrations CASCADE');
+    await client.query('DROP TABLE IF EXISTS saved_filters, breeding_listing_epds, breeding_listing_breeds, breeding_listings, feeder_listing_vaccinations, feeder_listing_programs, feeder_listing_breeds, feeder_listings, feeder_lots, listings, barn_contact_log, barn_settings, users, schema_migrations CASCADE');
     await client.end();
   });
 

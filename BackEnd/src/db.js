@@ -29,6 +29,28 @@ async function ping() {
   return result.rows[0].ok === 1;
 }
 
+// Runs fn(client) inside one transaction; any error rolls everything back.
+async function transaction(fn) {
+  const p = getPool();
+  if (!p) throw new Error('DATABASE_URL is not set');
+  const client = await p.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await fn(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (err) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (e) {
+      /* connection already gone */
+    }
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 async function close() {
   if (pool) {
     await pool.end();
@@ -36,4 +58,4 @@ async function close() {
   }
 }
 
-module.exports = { query, ping, isConfigured, close };
+module.exports = { query, transaction, ping, isConfigured, close };
