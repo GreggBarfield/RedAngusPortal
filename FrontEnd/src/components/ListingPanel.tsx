@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Row } from '@/components/Page'
 import type { BreedingListing, CattleKind, FeederListing } from '@/lib/api'
-import { BREED_CLASS_LABELS, METHOD_LABELS, SALE_TYPE_LABELS, SEX_CLASS_LABELS, formatDate, formatPrice, placeText } from '@/lib/cattle'
+import { BREED_CLASS_LABELS, breedText, METHOD_LABELS, SALE_TYPE_LABELS, SEX_CLASS_LABELS, formatDate, formatPrice, placeText } from '@/lib/cattle'
 
 type Any = FeederListing | BreedingListing
 
@@ -24,7 +24,7 @@ function FeederFacts({ l }: { l: FeederListing }) {
         <Row label="Heifers" value={l.heiferCount} />
         <Row label="Total head" value={l.headCount} />
         <Row label="Average weight" value={weight} />
-        <Row label="Breeds" value={l.breeds.join(', ')} />
+        <Row label="Breeds" value={breedText(l)} />
         <Row label="Age" value={l.ageMonths != null ? `${l.ageMonths} months` : null} />
         <Row label="Days weaned" value={l.daysWeaned} />
         <Row label="Preconditioning" value={l.preconditioning.join(', ')} />

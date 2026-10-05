@@ -13,7 +13,7 @@ import SearchFilters from '@/components/SearchFilters'
 import { ApiError, searchListings } from '@/lib/api'
 import type { BreedingListing, CattleKind, FeederListing, ListingPage } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
-import { METHOD_LABELS, SALE_TYPE_LABELS, SEX_CLASS_LABELS, formatDate, formatPrice, placeText } from '@/lib/cattle'
+import { METHOD_LABELS, breedText, SALE_TYPE_LABELS, SEX_CLASS_LABELS, formatDate, formatPrice, placeText } from '@/lib/cattle'
 import { SORT_OPTIONS, hasFilters, sortValue, toApi, withSort } from '@/lib/searchFilters'
 import { cn } from '@/lib/utils'
 
@@ -26,7 +26,7 @@ function FeederCard({ l }: { l: FeederListing }) {
         {l.headline}
       </Link>
       <p className="text-sm text-muted-foreground">
-        {l.breeds.join(', ')} - {l.headCount} head - {METHOD_LABELS[l.marketingMethod]} {formatDate(l.marketingDate)} - {placeText(l)}
+        {breedText(l)} - {l.headCount} head - {METHOD_LABELS[l.marketingMethod]} {formatDate(l.marketingDate)} - {placeText(l)}
         {l.distanceMiles != null ? ` (${l.distanceMiles} miles)` : ''}
       </p>
       {l.groupId && <p className="text-xs text-muted-foreground">Group {l.groupId}</p>}

@@ -167,6 +167,20 @@ maybe('new listing tables (real Postgres)', () => {
       expect(Number((await client.query('SELECT count(*) AS n FROM feeder_listing_breeds')).rows[0].n)).toBe(before);
     });
 
+    test('breed amounts are saved with each breed, replaced on edit, and cleared when the mode is dropped', async () => {
+      const v = (extra) => feeder({ breedMode: 'percent', breedAmounts: { 'Red Angus': '75', Angus: '25' }, ...extra });
+      const r = await feeders.create(ownerId, v());
+      expect(r.breed_mode).toBe('percent');
+      expect(r.breeds).toEqual(['Red Angus', 'Angus']);
+      expect(r.breed_amounts).toEqual([75, 25]);
+      const up = await feeders.update(r.id, v({ breedMode: 'head', breedAmounts: { 'Red Angus': '45', Angus: '15' } }));
+      expect(up.breed_mode).toBe('head');
+      expect(up.breed_amounts).toEqual([45, 15]);
+      const none = await feeders.update(r.id, feeder());
+      expect(none.breed_mode).toBeNull();
+      expect(none.breed_amounts).toEqual([null, null]);
+    });
+
     test('only approved listings appear in search; words reach breeds, programs, vaccines and group id', async () => {
       await client.query('DELETE FROM feeder_listings');
       const a = await feeders.create(ownerId, feeder({ groupId: 'ALPHA100' }));

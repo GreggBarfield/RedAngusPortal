@@ -40,6 +40,43 @@ function headlineFor(v) {
   return (bits.length ? `${counts} - ${bits.join(', ')}` : counts).slice(0, 150);
 }
 
+// Optional breed makeup: a mode (percent or head count) and one amount per chosen breed.
+// Amounts come as { "Red Angus": "75", ... }. The totals are not enforced here (the form only warns).
+function breedMakeup(b, v, errors) {
+  v.breedMode = null;
+  v.breedAmounts = (v.breeds || []).map(() => null);
+  const mode = b.breedMode == null || b.breedMode === '' ? null : b.breedMode;
+  if (mode !== null && mode !== 'percent' && mode !== 'head') {
+    errors.breedMode = 'Choose percent or head count.';
+    return;
+  }
+  if (mode === null || errors.breeds) return;
+  const raw = b.breedAmounts;
+  if (raw != null && (typeof raw !== 'object' || Array.isArray(raw))) {
+    errors.breedAmounts = 'Check the breed amounts.';
+    return;
+  }
+  const byName = new Map(Object.entries(raw || {}).map(([k, val]) => [k.trim().toLowerCase(), val]));
+  const out = [];
+  for (const name of v.breeds) {
+    const val = byName.get(name.toLowerCase());
+    if (val == null || String(val).trim() === '') {
+      out.push(null);
+      continue;
+    }
+    const t = String(val).trim();
+    const okFormat = mode === 'head' ? /^\d{1,4}$/.test(t) : /^\d{1,3}(\.\d{1,2})?$/.test(t);
+    const n = Number(t);
+    if (!okFormat || !(n > 0) || (mode === 'percent' && n > 100) || (mode === 'head' && n > 5000)) {
+      errors.breedAmounts = mode === 'percent' ? `Enter a percent from 1 to 100 for ${name}.` : `Enter a head count for ${name}.`;
+      return;
+    }
+    out.push(n);
+  }
+  v.breedMode = mode;
+  v.breedAmounts = out;
+}
+
 // Returns { values } with every column filled in (null when blank), or { errors }.
 function validateFeederListing(body, now = new Date()) {
   const c = checker(body, now);
@@ -71,6 +108,7 @@ function validateFeederListing(body, now = new Date()) {
   else v.birthCountry = bc;
 
   c.names('breeds', { min: 1, max: 10, itemMax: 100, label: 'at least one breed' });
+  breedMakeup(b, v, errors);
   c.names('preconditioning', { min: 0, max: 10, itemMax: 100, label: 'a program' });
   c.names('special', { min: 0, max: 10, itemMax: 100, label: 'a program' });
   c.opt('description', 4000);
@@ -180,6 +218,8 @@ function shape(row, level, now = new Date()) {
     description: row.description,
     nutrition: row.nutrition,
     breeds: row.breeds || [],
+    breedMode: row.breed_mode || null,
+    breedDetails: (row.breeds || []).map((name, i) => ({ name, amount: row.breed_amounts && row.breed_amounts[i] != null ? row.breed_amounts[i] : null })),
     preconditioning: programs.filter((p) => p.type === 'PC').map((p) => p.name),
     special: programs.filter((p) => p.type === 'SP').map((p) => p.name),
     vaccinations: row.vaccinations || [],

@@ -8,7 +8,7 @@ import { Page, Row } from '@/components/Page'
 import { ApiError, closeCattleListing, getCattleListing } from '@/lib/api'
 import type { BreedingListing, CattleKind, FeederListing } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
-import { BREED_CLASS_LABELS, METHOD_LABELS, SALE_TYPE_LABELS, SEX_CLASS_LABELS, STATUS_LABELS, formatDate, formatPrice, placeText } from '@/lib/cattle'
+import { BREED_CLASS_LABELS, breedText, METHOD_LABELS, SALE_TYPE_LABELS, SEX_CLASS_LABELS, STATUS_LABELS, formatDate, formatPrice, placeText } from '@/lib/cattle'
 
 function Block({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -33,7 +33,7 @@ function FeederBody({ l }: { l: FeederListing }) {
           <Row label="Heifers" value={l.heiferCount} />
           <Row label="Total head" value={l.headCount} />
           <Row label="Average weight" value={weight} />
-          <Row label="Breeds" value={l.breeds.join(', ')} />
+          <Row label="Breeds" value={breedText(l)} />
           <Row label="Birth date" value={formatDate(l.birthDate)} />
           <Row label="Age" value={l.ageMonths != null ? `${l.ageMonths} months` : null} />
           <Row label="Wean date" value={formatDate(l.weanDate)} />

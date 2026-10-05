@@ -270,6 +270,8 @@ export interface FeederListing extends ListingCommon {
   birthCountry: string
   nutrition: string | null
   breeds: string[]
+  breedMode: 'percent' | 'head' | null
+  breedDetails: { name: string; amount: number | null }[]
   preconditioning: string[]
   special: string[]
   vaccinations: Vaccination[]

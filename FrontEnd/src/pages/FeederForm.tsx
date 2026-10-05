@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { Check, ChipPicker, Field, FormBanner, Section, MultiSelect, SelectField, Span, TextArea, TextField } from '@/components/form'
-import { AuctionPicker, ContactFields, PlaceFields, PriceFields, ProductPicker } from '@/components/formParts'
+import { Check, Field, FormBanner, Section, MultiSelect, SelectField, Span, TextArea, TextField } from '@/components/form'
+import { AuctionPicker, BreedMakeup, ContactFields, PlaceFields, PriceFields, ProductPicker } from '@/components/formParts'
 import { Input } from '@/components/ui/input'
 import { ApiError, getBreeds, getCattleListing, getCountries, getGroupId, getPrograms, saveCattleListing } from '@/lib/api'
 import type { FeederListing } from '@/lib/api'
@@ -24,6 +24,8 @@ interface Form {
   avgWeightSteers: string
   avgWeightHeifers: string
   breeds: string[]
+  breedMode: '' | 'percent' | 'head'
+  breedAmounts: Record<string, string>
   birthDate: string
   weanDate: string
   vetName: string
@@ -65,6 +67,8 @@ function blankForm(name: string, email: string): Form {
     avgWeightSteers: '',
     avgWeightHeifers: '',
     breeds: [],
+    breedMode: '',
+    breedAmounts: {},
     birthDate: '',
     weanDate: '',
     vetName: '',
@@ -102,6 +106,8 @@ function fromListing(l: FeederListing): Form {
     avgWeightSteers: s(l.avgWeightSteers),
     avgWeightHeifers: s(l.avgWeightHeifers),
     breeds: l.breeds,
+    breedMode: l.breedMode ?? '',
+    breedAmounts: Object.fromEntries((l.breedDetails ?? []).filter((d) => d.amount != null).map((d) => [d.name, String(d.amount)])),
     birthDate: s(l.birthDate).slice(0, 10),
     weanDate: s(l.weanDate).slice(0, 10),
     vetName: s(l.vetName),
@@ -140,6 +146,8 @@ function toPayload(f: Form) {
     avgWeightSteers: f.avgWeightSteers,
     avgWeightHeifers: f.avgWeightHeifers,
     breeds: f.breeds,
+    breedMode: f.breedMode,
+    breedAmounts: f.breedMode ? Object.fromEntries(f.breeds.map((b) => [b, f.breedAmounts[b] ?? ''])) : {},
     birthDate: f.birthDate,
     weanDate: f.weanDate,
     vetName: f.vetName,
@@ -275,9 +283,19 @@ export default function FeederForm() {
         <TextField id="avgWeightHeifers" label="Average weight - heifers (lbs)" value={form.avgWeightHeifers} onChange={(v) => set('avgWeightHeifers', v.replace(/\D/g, ''))} error={errors.avgWeightHeifers} inputMode="numeric" />
 
         <TextField id="totalHead" label="Total head" value={String(total)} onChange={() => {}} readOnly hint="Steers plus heifers." />
-        <ChipPicker id="breeds" label="Breed(s)" options={breeds} selected={form.breeds} onChange={(v) => set('breeds', v)} max={10} error={errors.breeds} hint="Choose from the list. Up to 10." />
+        <MultiSelect id="breeds" label="Breed(s)" options={breeds} selected={form.breeds} onChange={(v) => set('breeds', v)} max={10} searchable error={errors.breeds} />
         <MultiSelect id="preconditioning" label="Preconditioning programs" options={pc} selected={form.preconditioning} onChange={(v) => set('preconditioning', v)} error={errors.preconditioning} />
         <MultiSelect id="special" label="Special programs" options={sp} selected={form.special} onChange={(v) => set('special', v)} error={errors.special} />
+
+        <BreedMakeup
+          breeds={form.breeds}
+          mode={form.breedMode}
+          amounts={form.breedAmounts}
+          totalHead={total}
+          error={errors.breedAmounts || errors.breedMode}
+          onMode={(m) => set('breedMode', m)}
+          onAmount={(b, v) => set('breedAmounts', { ...form.breedAmounts, [b]: v })}
+        />
 
         <TextField id="birthDate" label="Birth date" type="date" value={form.birthDate} onChange={(v) => set('birthDate', v)} error={errors.birthDate} />
         <TextField id="weanDate" label="Wean date" type="date" value={form.weanDate} onChange={(v) => set('weanDate', v)} error={errors.weanDate} />

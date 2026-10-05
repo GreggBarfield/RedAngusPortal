@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
-import { Check, ChipPicker, Field, SelectField, TextField } from '@/components/form'
+import { Check, Field, MultiSelect, SelectField, TextField } from '@/components/form'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { getBreeds, getEpdTraits, getPrograms } from '@/lib/api'
@@ -103,7 +103,7 @@ function FilterEditor({ params, lists, chip, onChange, onClose }: EditorProps) {
       return (
         <Editor {...common} onApply={() => apply({ breed: many })}>
           <div className="col-span-full">
-            <ChipPicker id="f-breed" label="Breed" options={lists.breeds} selected={many} onChange={setMany} max={10} hint={lists.failed && !lists.breeds.length ? 'The breed list could not load.' : 'Red Angus shows first; type to find others.'} />
+            <MultiSelect id="f-breed" label="Breed" options={lists.breeds} selected={many} onChange={setMany} max={10} searchable hint={lists.failed && !lists.breeds.length ? 'The breed list could not load.' : undefined} />
           </div>
         </Editor>
       )

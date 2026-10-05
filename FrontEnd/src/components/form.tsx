@@ -1,6 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
@@ -95,10 +94,10 @@ export function TextArea({ id, label, value, onChange, error, hint, rows = 4 }: 
   )
 }
 
-export function Check({ id, label, checked, onChange }: { id: string; label: string; checked: boolean; onChange: (v: boolean) => void }) {
+export function Check({ id, label, checked, onChange, disabled }: { id: string; label: string; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
     <div className="flex items-center gap-2">
-      <input id={id} type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="size-4" />
+      <input id={id} type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} className="size-4" />
       <Label htmlFor={id}>{label}</Label>
     </div>
   )
@@ -127,8 +126,10 @@ export function CheckGroup({ legend, options, selected, onChange, error }: { leg
 }
 
 // A drop-down you can tick several choices in (programs). The choices also show as small tags underneath.
-export function MultiSelect({ id, label, options, selected, onChange, error, hint }: { id: string; label: string; options: string[]; selected: string[]; onChange: (v: string[]) => void; error?: string; hint?: string }) {
+export function MultiSelect({ id, label, options, selected, onChange, error, hint, searchable, max }: { id: string; label: string; options: string[]; selected: string[]; onChange: (v: string[]) => void; error?: string; hint?: string; searchable?: boolean; max?: number }) {
   const [open, setOpen] = useState(false)
+  const [find, setFind] = useState('')
+  const shown = find.trim() ? options.filter((o) => o.toLowerCase().includes(find.trim().toLowerCase())) : options
   const box = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -165,12 +166,22 @@ export function MultiSelect({ id, label, options, selected, onChange, error, hin
         </button>
         {open && (
           <div role="group" aria-label={`${label} choices`} className="absolute left-0 top-full z-20 mt-1 max-h-72 w-max min-w-full max-w-[min(28rem,90vw)] overflow-y-auto rounded-md border bg-card p-2 shadow-md">
+            {searchable && <Input aria-label={`Search ${label}`} value={find} placeholder="Type to search..." className="mb-2" onChange={(e) => setFind(e.target.value)} />}
             {options.length === 0 && <p className="px-1 py-1 text-sm text-muted-foreground">Nothing to choose from.</p>}
+            {options.length > 0 && shown.length === 0 && <p className="px-1 py-1 text-sm text-muted-foreground">No match.</p>}
             <div className="grid gap-1.5">
-              {options.map((o, i) => (
-                <Check key={o} id={`${id}-opt-${i}`} label={o} checked={selected.includes(o)} onChange={(on) => onChange(on ? [...selected, o] : selected.filter((x) => x !== o))} />
+              {shown.map((o) => (
+                <Check
+                  key={o}
+                  id={`${id}-opt-${options.indexOf(o)}`}
+                  label={o}
+                  checked={selected.includes(o)}
+                  disabled={!selected.includes(o) && max != null && selected.length >= max}
+                  onChange={(on) => onChange(on ? [...selected, o] : selected.filter((x) => x !== o))}
+                />
               ))}
             </div>
+            {max != null && selected.length >= max && <p className="mt-2 px-1 text-xs text-muted-foreground">Up to {max} can be chosen.</p>}
           </div>
         )}
       </div>
@@ -227,29 +238,25 @@ export function ChipPicker({ id, label, options, selected, onChange, max, error,
   return (
     <div className="grid content-start gap-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <div className="flex gap-2">
-        <Input
-          id={id}
-          list={listId}
-          value={text}
-          placeholder="Start typing..."
-          aria-invalid={error ? true : undefined}
-          onChange={(e) => {
-            setText(e.target.value)
-            setNote('')
-            if (options.some((o) => o === e.target.value)) add(e.target.value)
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              add(text)
-            }
-          }}
-        />
-        <Button type="button" variant="outline" onClick={() => add(text)}>
-          Add
-        </Button>
-      </div>
+      <Input
+        id={id}
+        list={listId}
+        value={text}
+        placeholder="Start typing, then choose from the list"
+        aria-invalid={error ? true : undefined}
+        onChange={(e) => {
+          setText(e.target.value)
+          setNote('')
+          if (options.some((o) => o === e.target.value)) add(e.target.value)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            add(text)
+          }
+        }}
+        onBlur={() => text.trim() && add(text)}
+      />
       <datalist id={listId}>
         {options.map((o) => (
           <option key={o} value={o} />

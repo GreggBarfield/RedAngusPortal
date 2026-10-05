@@ -1,7 +1,7 @@
 'use strict';
 const { likePattern, params: makeParams, distanceSql } = require('./common');
 
-const COLUMNS = `f.id, f.owner_id, f.group_id, f.group_id_optout, f.headline, f.steer_count, f.heifer_count,
+const COLUMNS = `f.id, f.owner_id, f.group_id, f.group_id_optout, f.breed_mode, f.headline, f.steer_count, f.heifer_count,
   f.head_count, f.avg_weight_steers, f.avg_weight_heifers, f.avg_weight, f.birth_date::text AS birth_date,
   f.wean_date::text AS wean_date, f.vet_name, f.birth_country, f.description, f.nutrition, f.marketing_method,
   f.auction_no, f.auction_name, f.marketing_date::text AS marketing_date, f.tag_visual_start, f.tag_visual_end,
@@ -16,6 +16,7 @@ const FROM = 'FROM feeder_listings f JOIN users u ON u.id = f.owner_id';
 const FIELDS = [
   ['groupId', 'group_id'],
   ['groupIdOptout', 'group_id_optout'],
+  ['breedMode', 'breed_mode'],
   ['headline', 'headline'],
   ['steerCount', 'steer_count'],
   ['heiferCount', 'heifer_count'],
@@ -61,9 +62,9 @@ const AGE_MONTHS = `(date_part('year', age(current_date, f.birth_date)) * 12 + d
 async function writeChildren(c, id, v) {
   if (v.breeds.length > 0) {
     await c.query(
-      `INSERT INTO feeder_listing_breeds (listing_id, breed_name, sort_order)
-       SELECT $1::bigint, t.name, t.ord - 1 FROM unnest($2::text[]) WITH ORDINALITY AS t(name, ord)`,
-      [id, v.breeds],
+      `INSERT INTO feeder_listing_breeds (listing_id, breed_name, sort_order, amount)
+       SELECT $1::bigint, t.name, t.ord - 1, t.amount FROM unnest($2::text[], $3::numeric[]) WITH ORDINALITY AS t(name, amount, ord)`,
+      [id, v.breeds, v.breedAmounts || v.breeds.map(() => null)],
     );
   }
   const names = [...v.preconditioning, ...v.special];
@@ -88,7 +89,7 @@ async function writeChildren(c, id, v) {
 async function attach(db, rows) {
   if (rows.length === 0) return rows;
   const ids = rows.map((r) => r.id);
-  const b = await db.query('SELECT listing_id, breed_name FROM feeder_listing_breeds WHERE listing_id = ANY($1::bigint[]) ORDER BY sort_order, id', [ids]);
+  const b = await db.query('SELECT listing_id, breed_name, amount::float8 AS amount FROM feeder_listing_breeds WHERE listing_id = ANY($1::bigint[]) ORDER BY sort_order, id', [ids]);
   const p = await db.query('SELECT listing_id, program_name, program_type FROM feeder_listing_programs WHERE listing_id = ANY($1::bigint[]) ORDER BY sort_order, id', [ids]);
   const vc = await db.query('SELECT listing_id, vac_date::text AS vac_date, product FROM feeder_listing_vaccinations WHERE listing_id = ANY($1::bigint[]) ORDER BY sort_order, id', [ids]);
   const group = (res, fn) => {
@@ -101,11 +102,13 @@ async function attach(db, rows) {
     return m;
   };
   const breeds = group(b, (r) => r.breed_name);
+  const amounts = group(b, (r) => r.amount);
   const programs = group(p, (r) => ({ name: r.program_name, type: r.program_type }));
   const vacc = group(vc, (r) => ({ date: r.vac_date, product: r.product }));
   for (const row of rows) {
     const k = String(row.id);
     row.breeds = breeds.get(k) || [];
+    row.breed_amounts = amounts.get(k) || [];
     row.programs = programs.get(k) || [];
     row.vaccinations = vacc.get(k) || [];
   }

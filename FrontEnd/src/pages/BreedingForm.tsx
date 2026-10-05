@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
-import { Check, ChipPicker, Field, FormBanner, Section, SelectField, Span, TextArea, TextField } from '@/components/form'
+import { Check, Field, MultiSelect, FormBanner, Section, SelectField, Span, TextArea, TextField } from '@/components/form'
 import { AuctionPicker, ContactFields, PlaceFields, PriceFields } from '@/components/formParts'
 import { ApiError, getBreeds, getCattleListing, getEpdTraits, saveCattleListing } from '@/lib/api'
 import type { BreedingListing, EpdTrait } from '@/lib/api'
@@ -230,7 +230,7 @@ export default function BreedingForm() {
         <TextField id="regNumber" label="Registration number" value={form.regNumber} onChange={(v) => set('regNumber', v)} error={errors.regNumber} />
 
         <Span cols={2}>
-          <ChipPicker id="breeds" label="Breed(s)" options={breeds} selected={form.breeds} onChange={(v) => set('breeds', v)} max={10} error={errors.breeds} hint="Choose from the list. Up to 10." />
+          <MultiSelect id="breeds" label="Breed(s)" options={breeds} selected={form.breeds} onChange={(v) => set('breeds', v)} max={10} searchable error={errors.breeds} />
         </Span>
         <SelectField id="breedClass" label="Breed class" value={form.breedClass} onChange={(v) => set('breedClass', v)} error={errors.breedClass} blank="Choose..." options={Object.entries(BREED_CLASS_LABELS)} />
         <SelectField id="primaryBreed" label="Primary breed" value={form.primaryBreed} onChange={(v) => set('primaryBreed', v)} error={errors.primaryBreed} blank="First breed above" options={form.breeds.map((b) => [b, b])} />

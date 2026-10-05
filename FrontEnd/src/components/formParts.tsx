@@ -2,10 +2,12 @@ import { useEffect, useId, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select } from '@/components/ui/select'
 import { Check, Field, SelectField, Span, TextField, useDebounced } from '@/components/form'
 import { ApiError, addAuction, addVaccineProduct, getAuctions, getVaccineProducts, getZip } from '@/lib/api'
 import type { AuctionMarket, VaccineProduct } from '@/lib/api'
 import { BASIS_LABELS, US_STATES } from '@/lib/cattle'
+import { cn } from '@/lib/utils'
 
 type Errors = Record<string, string>
 
@@ -224,8 +226,8 @@ export function AuctionPicker({
     }
   }, [q])
 
-  const exact = results.find((a) => a.name.toLowerCase() === name.trim().toLowerCase())
-  const showAdd = name.trim().length >= 2 && !exact && q === name && !adding
+  // Always offered, so people can find it before they have typed anything.
+  const showAdd = !adding
 
   return (
     <Span cols={2}>
@@ -308,8 +310,8 @@ export function ProductPicker({
     }
   }, [q])
 
-  const exact = results.some((p) => p.name.toLowerCase() === value.trim().toLowerCase())
-  const showAdd = value.trim().length >= 2 && !exact && q === value && !adding
+  // Always offered, so people can find it before they have typed anything.
+  const showAdd = !adding
 
   return (
     <div className="grid content-start gap-1.5">
@@ -347,5 +349,62 @@ export function ProductPicker({
         />
       )}
     </div>
+  )
+}
+
+// Optional breed makeup for feeder cattle: a percent or a head count for each chosen breed.
+// It only warns when the amounts do not add up; the seller can still submit.
+export function BreedMakeup({
+  breeds,
+  mode,
+  amounts,
+  totalHead,
+  error,
+  onMode,
+  onAmount,
+}: {
+  breeds: string[]
+  mode: '' | 'percent' | 'head'
+  amounts: Record<string, string>
+  totalHead: number
+  error?: string
+  onMode: (m: '' | 'percent' | 'head') => void
+  onAmount: (breed: string, value: string) => void
+}) {
+  if (breeds.length === 0) return null
+  const sum = breeds.reduce((t, b) => t + (Number(amounts[b]) || 0), 0)
+  const any = breeds.some((b) => (amounts[b] ?? '').trim() !== '')
+  const target = mode === 'percent' ? 100 : totalHead
+  const off = mode !== '' && any && Math.abs(sum - target) > 0.001
+  return (
+    <fieldset className="col-span-full grid gap-3 rounded-md border bg-muted/30 p-4">
+      <legend className="px-1 text-sm font-medium">Breed makeup (optional)</legend>
+      <div className="grid grid-cols-1 items-start gap-x-6 gap-y-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Field id="breedMode" label="Show the breeds as">
+          <Select id="breedMode" value={mode} onChange={(e) => onMode(e.target.value as '' | 'percent' | 'head')}>
+            <option value="">Just the breed names</option>
+            <option value="percent">Percent of each breed</option>
+            <option value="head">Head count of each breed</option>
+          </Select>
+        </Field>
+        {mode !== '' &&
+          breeds.map((b, i) => (
+            <Field key={b} id={`breedAmount${i}`} label={mode === 'percent' ? `${b} (%)` : `${b} (head)`}>
+              <Input id={`breedAmount${i}`} inputMode="numeric" value={amounts[b] ?? ''} onChange={(e) => onAmount(b, e.target.value.replace(mode === 'head' ? /\D/g : /[^\d.]/g, ''))} />
+            </Field>
+          ))}
+      </div>
+      {mode !== '' && any && (
+        <p className={cn('text-sm', off ? 'text-amber-700' : 'text-muted-foreground')} role={off ? 'status' : undefined}>
+          {mode === 'percent' ? `Total: ${sum}%` : `Total: ${sum} of ${totalHead} head`}
+          {off ? (mode === 'percent' ? ' - this does not add up to 100%. You can still submit.' : ' - this does not match the total head. You can still submit.') : ''}
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
+    </fieldset>
   )
 }

@@ -181,16 +181,34 @@ describe('feeder listing form', () => {
     expect(screen.queryByLabelText('Auction market')).toBeNull()
   })
 
-  it('only takes breeds from the list', async () => {
+  it('breeds: search the list, tick several, and add a percent for each (a warning only)', async () => {
     stubApi([])
     mount('/list/feeder')
-    const box = await screen.findByLabelText('Breed(s)')
-    fireEvent.change(box, { target: { value: 'Martian Cow' } })
-    fireEvent.keyDown(box, { key: 'Enter' })
-    expect(screen.getByText('Choose a breed from the list.')).toBeInTheDocument()
-    fireEvent.change(box, { target: { value: 'red angus' } })
-    fireEvent.keyDown(box, { key: 'Enter' })
-    expect(screen.getByRole('list', { name: /chosen/i })).toHaveTextContent('Red Angus')
+    const btn = await screen.findByRole('button', { name: 'Breed(s)' })
+    fireEvent.click(btn)
+    const list = await screen.findByRole('group', { name: 'Breed(s) choices' })
+    fireEvent.change(within(list).getByLabelText('Search Breed(s)'), { target: { value: 'here' } })
+    expect(within(list).getByLabelText('Hereford')).toBeInTheDocument()
+    expect(within(list).queryByLabelText('Red Angus')).toBeNull()
+    fireEvent.change(within(list).getByLabelText('Search Breed(s)'), { target: { value: '' } })
+    fireEvent.click(within(list).getByLabelText('Red Angus'))
+    fireEvent.click(within(list).getByLabelText('Angus'))
+    fireEvent.mouseDown(document.body)
+    expect(screen.getByRole('list', { name: 'Chosen: Breed(s)' })).toHaveTextContent('Red Angus')
+    expect(btn).toHaveTextContent('2 selected')
+
+    fireEvent.change(screen.getByLabelText('Show the breeds as'), { target: { value: 'percent' } })
+    fireEvent.change(screen.getByLabelText('Red Angus (%)'), { target: { value: '75' } })
+    fireEvent.change(screen.getByLabelText('Angus (%)'), { target: { value: '20' } })
+    expect(screen.getByRole('status')).toHaveTextContent('does not add up to 100%')
+    fireEvent.change(screen.getByLabelText('Angus (%)'), { target: { value: '25' } })
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByText('Total: 100%')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Show the breeds as'), { target: { value: 'head' } })
+    fireEvent.change(screen.getByLabelText('Steers (head)'), { target: { value: '40' } })
+    fireEvent.change(screen.getByLabelText('Red Angus (head)'), { target: { value: '10' } })
+    expect(screen.getByRole('status')).toHaveTextContent('does not match the total head')
   })
 
   it('looks up the zip and fills in the state and city', async () => {
@@ -236,9 +254,10 @@ describe('feeder listing form', () => {
     await waitFor(() => expect(screen.getByLabelText('Group Identifier')).toHaveValue('MEMBER100'))
     fireEvent.change(screen.getByLabelText('Steers (head)'), { target: { value: '40' } })
     fireEvent.change(screen.getByLabelText('Heifers (head)'), { target: { value: '20' } })
-    const box = screen.getByLabelText('Breed(s)')
-    fireEvent.change(box, { target: { value: 'Red Angus' } })
-    fireEvent.keyDown(box, { key: 'Enter' })
+    fireEvent.click(screen.getByRole('button', { name: 'Breed(s)' }))
+    fireEvent.click(screen.getByLabelText('Red Angus'))
+    fireEvent.change(screen.getByLabelText('Show the breeds as'), { target: { value: 'percent' } })
+    fireEvent.change(screen.getByLabelText('Red Angus (%)'), { target: { value: '100' } })
     fireEvent.click(screen.getByRole('button', { name: 'Preconditioning programs' }))
     fireEvent.click(screen.getByLabelText('Weaned 45 Days'))
     fireEvent.change(screen.getByLabelText('Marketing method'), { target: { value: 'off_ranch' } })
@@ -254,6 +273,8 @@ describe('feeder listing form', () => {
       steerCount: '40',
       heiferCount: '20',
       breeds: ['Red Angus'],
+      breedMode: 'percent',
+      breedAmounts: { 'Red Angus': '100' },
       preconditioning: ['Weaned 45 Days'],
       marketingMethod: 'off_ranch',
       marketingDate: '2026-11-15',
@@ -323,9 +344,8 @@ describe('breeding listing form', () => {
     mount('/list/breeding')
     fireEvent.change(await screen.findByLabelText('Number of head'), { target: { value: '3' } })
     fireEvent.change(screen.getByLabelText('Sex / class'), { target: { value: 'bull' } })
-    const box = screen.getByLabelText('Breed(s)')
-    fireEvent.change(box, { target: { value: 'Red Angus' } })
-    fireEvent.keyDown(box, { key: 'Enter' })
+    fireEvent.click(screen.getByRole('button', { name: 'Breed(s)' }))
+    fireEvent.click(screen.getByLabelText('Red Angus'))
     fireEvent.change(screen.getByLabelText('Trait'), { target: { value: 'BW' } })
     fireEvent.change(screen.getByLabelText('Value'), { target: { value: '1.5' } })
     fireEvent.change(screen.getByLabelText('Sale type'), { target: { value: 'private_treaty' } })

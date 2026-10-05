@@ -71,3 +71,10 @@ export function formatPrice(l: { askingPrice: number | null; callForPrice: boole
 export function placeText(l: { city: string | null; state: string }): string {
   return l.city ? `${l.city}, ${l.state}` : l.state
 }
+
+// Breeds as shown to buyers: with percents or head counts when the seller gave them.
+export function breedText(l: { breeds: string[]; breedMode?: 'percent' | 'head' | null; breedDetails?: { name: string; amount: number | null }[] }): string {
+  const d = l.breedDetails
+  if (!l.breedMode || !d || !d.some((x) => x.amount != null)) return l.breeds.join(', ')
+  return d.map((x) => (x.amount == null ? x.name : l.breedMode === 'percent' ? `${x.name} ${x.amount}%` : `${x.name} (${x.amount} head)`)).join(', ')
+}

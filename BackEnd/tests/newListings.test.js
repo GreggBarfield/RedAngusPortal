@@ -215,6 +215,40 @@ describe('validateFeederListing', () => {
     });
   });
 
+  describe('breed makeup', () => {
+    const mk = (extra) => validateFeederListing({ ...FEEDER, breeds: ['Red Angus', 'Angus'], ...extra }, NOW);
+
+    test('is optional: no mode means no amounts', () => {
+      const { values, errors } = mk({ breedAmounts: { 'Red Angus': '75' } });
+      expect(errors).toBeUndefined();
+      expect(values.breedMode).toBeNull();
+      expect(values.breedAmounts).toEqual([null, null]);
+    });
+
+    test('percent amounts line up with the breeds (names matched ignoring case)', () => {
+      const { values, errors } = mk({ breedMode: 'percent', breedAmounts: { 'red angus': '75', Angus: 25 } });
+      expect(errors).toBeUndefined();
+      expect(values.breedMode).toBe('percent');
+      expect(values.breedAmounts).toEqual([75, 25]);
+    });
+
+    test('head counts; a blank amount is allowed; totals are not enforced', () => {
+      const { values, errors } = mk({ breedMode: 'head', breedAmounts: { 'Red Angus': '10', Angus: '' } });
+      expect(errors).toBeUndefined();
+      expect(values.breedMode).toBe('head');
+      expect(values.breedAmounts).toEqual([10, null]);
+    });
+
+    test('bad amounts and modes are refused', () => {
+      expect(mk({ breedMode: 'percent', breedAmounts: { 'Red Angus': '101' } }).errors.breedAmounts).toMatch(/1 to 100/);
+      expect(mk({ breedMode: 'percent', breedAmounts: { 'Red Angus': 'abc' } }).errors.breedAmounts).toBeDefined();
+      expect(mk({ breedMode: 'head', breedAmounts: { 'Red Angus': '2.5' } }).errors.breedAmounts).toBeDefined();
+      expect(mk({ breedMode: 'head', breedAmounts: { 'Red Angus': '0' } }).errors.breedAmounts).toBeDefined();
+      expect(mk({ breedMode: 'half' }).errors.breedMode).toBeDefined();
+      expect(mk({ breedMode: 'percent', breedAmounts: ['75'] }).errors.breedAmounts).toBeDefined();
+    });
+  });
+
   test('required fields each get a message', () => {
     const { errors } = validateFeederListing({}, NOW);
     expect(Object.keys(errors)).toEqual(expect.arrayContaining(['steerCount', 'breeds', 'marketingMethod', 'marketingDate', 'contactName', 'contactPhone', 'contactEmail']));
