@@ -4,18 +4,39 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
-import { ApiError, getReviewQueue, reviewListing } from '@/lib/api'
-import type { Listing } from '@/lib/api'
+import { Page } from '@/components/Page'
+import { ApiError, getCattleQueue, reviewCattleListing } from '@/lib/api'
+import type { BreedingListing, CattleKind, FeederListing } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
-import { KIND_LABELS, formatDate, formatPrice } from '@/lib/listings'
+import { METHOD_LABELS, SALE_TYPE_LABELS, SEX_CLASS_LABELS, formatDate, formatPrice, placeText } from '@/lib/cattle'
+import { cn } from '@/lib/utils'
 
-type Tab = 'pending' | 'approved' | 'rejected'
-const TAB_LABELS: Record<Tab, string> = { pending: 'Waiting', approved: 'Live', rejected: 'Not approved' }
+type Status = 'pending' | 'approved' | 'rejected'
+type Any = FeederListing | BreedingListing
+const STATUS_TABS: Record<Status, string> = { pending: 'Waiting', approved: 'Live', rejected: 'Not approved' }
+
+function Summary({ kind, l }: { kind: CattleKind; l: Any }) {
+  if (kind === 'feeder') {
+    const f = l as FeederListing
+    return (
+      <p className="text-sm text-muted-foreground">
+        {f.breeds.join(', ')} - {METHOD_LABELS[f.marketingMethod]} {formatDate(f.marketingDate)} - {placeText(f)} - {formatPrice(f)}
+      </p>
+    )
+  }
+  const b = l as BreedingListing
+  return (
+    <p className="text-sm text-muted-foreground">
+      {SEX_CLASS_LABELS[b.sexClass]} - {b.breeds.join(', ')} - {SALE_TYPE_LABELS[b.saleType]} {formatDate(b.saleDate)} - {placeText(b)} - {formatPrice(b)}
+    </p>
+  )
+}
 
 export default function StaffReview() {
   const { user, token } = useAuth()
-  const [tab, setTab] = useState<Tab>('pending')
-  const [items, setItems] = useState<Listing[] | null>(null)
+  const [kind, setKind] = useState<CattleKind>('feeder')
+  const [status, setStatus] = useState<Status>('pending')
+  const [items, setItems] = useState<Any[] | null>(null)
   const [error, setError] = useState('')
   const [rejecting, setRejecting] = useState<string | null>(null)
   const [note, setNote] = useState('')
@@ -25,16 +46,17 @@ export default function StaffReview() {
   const load = useCallback(async () => {
     if (!token) return
     try {
-      const r = await getReviewQueue(tab, token)
+      const r = await getCattleQueue<Any>(kind, status, token)
       setItems(r.listings)
       setError('')
     } catch {
       setError('Could not load the queue. Try again.')
     }
-  }, [tab, token])
+  }, [kind, status, token])
 
   useEffect(() => {
     setItems(null)
+    setRejecting(null)
     void load()
   }, [load])
 
@@ -46,7 +68,7 @@ export default function StaffReview() {
     }
     setBusy(true)
     try {
-      await reviewListing(id, decision, decision === 'reject' ? note : '', token)
+      await reviewCattleListing(kind, id, decision, decision === 'reject' ? note : '', token)
       setRejecting(null)
       setNote('')
       setNoteError('')
@@ -65,27 +87,35 @@ export default function StaffReview() {
 
   if (user && user.role !== 'staff') {
     return (
-      <main className="mx-auto max-w-2xl px-6 py-16">
+      <Page>
         <h1 className="text-2xl font-semibold">Staff only</h1>
         <p className="mt-2 text-muted-foreground">This page is for Red Angus Association staff.</p>
-      </main>
+      </Page>
     )
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
+    <Page>
       <h1 className="text-3xl font-semibold tracking-tight">Review listings</h1>
-      <p className="mt-1 text-sm">
-        <Link to="/staff/review-feeders" className="text-primary underline">
-          Review feeder lots instead
-        </Link>
-      </p>
+      <nav aria-label="Kind of cattle" className="mt-4 flex gap-1 border-b">
+        {(['feeder', 'breeding'] as CattleKind[]).map((k) => (
+          <button
+            key={k}
+            type="button"
+            aria-pressed={k === kind}
+            onClick={() => setKind(k)}
+            className={cn('-mb-px rounded-t-md border border-b-0 px-5 py-2 text-sm font-medium', k === kind ? 'border-border bg-card text-primary' : 'border-transparent text-muted-foreground hover:text-foreground')}
+          >
+            {k === 'feeder' ? 'Feeder Cattle' : 'Breeding Cattle'}
+          </button>
+        ))}
+      </nav>
       <div className="mt-4 grid max-w-xs gap-1.5">
-        <Label htmlFor="tab">Show</Label>
-        <Select id="tab" value={tab} onChange={(e) => setTab(e.target.value as Tab)}>
-          {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
+        <Label htmlFor="status">Show</Label>
+        <Select id="status" value={status} onChange={(e) => setStatus(e.target.value as Status)}>
+          {(Object.keys(STATUS_TABS) as Status[]).map((t) => (
             <option key={t} value={t}>
-              {TAB_LABELS[t]}
+              {STATUS_TABS[t]}
             </option>
           ))}
         </Select>
@@ -105,25 +135,22 @@ export default function StaffReview() {
             <CardContent className="grid gap-3 py-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <Link to={`/listings/${l.id}`} className="text-lg font-medium text-primary underline">
-                    {l.name}
+                  <Link to={`/${kind}/${l.id}`} className="text-lg font-medium text-primary underline">
+                    {l.headline}
                   </Link>
-                  <p className="text-sm text-muted-foreground">
-                    {KIND_LABELS[l.kind]} - born {formatDate(l.birthDate)} - {l.city}, {l.state} - {formatPrice(l)}
-                  </p>
+                  <Summary kind={kind} l={l} />
                   <p className="text-sm text-muted-foreground">
                     From {l.sellerName} - {l.contactPhone} - {l.contactEmail}
                   </p>
-                  {l.regNumber && <p className="text-sm">Reg. {l.regNumber}</p>}
                   {l.reviewNote && <p className="mt-1 text-sm">Note: {l.reviewNote}</p>}
                 </div>
                 <div className="flex gap-2">
-                  {tab !== 'approved' && (
+                  {status !== 'approved' && (
                     <Button size="sm" disabled={busy} onClick={() => void decide(l.id, 'approve')}>
                       Approve
                     </Button>
                   )}
-                  {tab !== 'rejected' && (
+                  {status !== 'rejected' && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -134,7 +161,7 @@ export default function StaffReview() {
                         setNoteError('')
                       }}
                     >
-                      {tab === 'approved' ? 'Pull back' : 'Reject'}
+                      {status === 'approved' ? 'Pull back' : 'Reject'}
                     </Button>
                   )}
                 </div>
@@ -143,13 +170,7 @@ export default function StaffReview() {
               {rejecting === l.id && (
                 <div className="grid gap-2">
                   <Label htmlFor={`note-${l.id}`}>Reason for the seller</Label>
-                  <textarea
-                    id={`note-${l.id}`}
-                    rows={3}
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                  />
+                  <textarea id={`note-${l.id}`} rows={3} value={note} onChange={(e) => setNote(e.target.value)} className="w-full rounded-md border bg-background px-3 py-2 text-sm" />
                   {noteError && <p className="text-sm text-destructive">{noteError}</p>}
                   <div className="flex gap-2">
                     <Button size="sm" disabled={busy} onClick={() => void decide(l.id, 'reject')}>
@@ -165,6 +186,6 @@ export default function StaffReview() {
           </Card>
         ))}
       </div>
-    </main>
+    </Page>
   )
 }

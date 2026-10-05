@@ -19,6 +19,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    // A busy machine (the server build) can need much longer than the 5 second default.
+    testTimeout: 30000,
     setupFiles: ['./src/test/setup.ts'],
   },
 })

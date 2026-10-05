@@ -207,149 +207,41 @@ export function getBarnLog(id: number, token: string): Promise<{ log: BarnLogEnt
   return request<{ log: BarnLogEntry[] }>('/api/barns/' + id + '/log', {}, token)
 }
 
-export type ListingKind = 'bull' | 'cow' | 'heifer' | 'bred_heifer' | 'pair'
+// ---------------------------------------------------------------------------
+// Cattle listings (feeder and breeding), pick lists from BTN, saved searches
+// ---------------------------------------------------------------------------
+
 export type ListingStatus = 'pending' | 'approved' | 'rejected' | 'sold' | 'withdrawn'
-
-export interface Listing {
-  id: string
-  kind: ListingKind
-  name: string
-  regNumber: string | null
-  birthDate: string
-  sireName: string | null
-  sireReg: string | null
-  damName: string | null
-  damReg: string | null
-  birthWeight: number | null
-  weaningWeight: number | null
-  yearlingWeight: number | null
-  scrotal: number | null
-  bredTo: string | null
-  dueDate: string | null
-  headCount: number
-  city: string
-  state: string
-  askingPrice: number | null
-  callForPrice: boolean
-  description: string | null
-  status: ListingStatus
-  approvedAt: string | null
-  createdAt: string
-  // Signed-in users:
-  contactName?: string
-  contactPhone?: string
-  contactEmail?: string
-  sellerName?: string
-  mine?: boolean
-  // Owner and staff:
-  tag?: string | null
-  zip?: string
-  reviewNote?: string | null
-  updatedAt?: string
-}
-
-export interface ListingList {
-  total: number
-  page: number
-  pageSize: number
-  listings: Listing[]
-}
-
-export interface ListingQuery {
-  q?: string
-  kind?: string
-  state?: string
-  page?: number
-}
-
-export function listListings(query: ListingQuery, token?: string | null): Promise<ListingList> {
-  const p = new URLSearchParams()
-  if (query.q) p.set('q', query.q)
-  if (query.kind) p.set('kind', query.kind)
-  if (query.state) p.set('state', query.state)
-  if (query.page && query.page > 1) p.set('page', String(query.page))
-  const qs = p.toString()
-  return request<ListingList>('/api/listings' + (qs ? '?' + qs : ''), {}, token)
-}
-
-export function getListing(id: string, token?: string | null): Promise<{ listing: Listing }> {
-  return request<{ listing: Listing }>('/api/listings/' + encodeURIComponent(id), {}, token)
-}
-
-export function getMyListings(token: string): Promise<{ listings: Listing[] }> {
-  return request<{ listings: Listing[] }>('/api/listings/mine', {}, token)
-}
-
-export type ListingInput = Record<string, string | boolean>
-
-export function createListing(input: ListingInput, token: string): Promise<{ listing: Listing }> {
-  return request<{ listing: Listing }>('/api/listings', { method: 'POST', body: JSON.stringify(input) }, token)
-}
-
-export function updateListing(id: string, input: ListingInput, token: string): Promise<{ listing: Listing }> {
-  return request<{ listing: Listing }>(
-    '/api/listings/' + encodeURIComponent(id),
-    { method: 'PUT', body: JSON.stringify(input) },
-    token,
-  )
-}
-
-export function closeListing(id: string, status: 'sold' | 'withdrawn', token: string): Promise<{ ok: boolean }> {
-  return request<{ ok: boolean }>(
-    '/api/listings/' + encodeURIComponent(id) + '/close',
-    { method: 'POST', body: JSON.stringify({ status }) },
-    token,
-  )
-}
-
-export function getReviewQueue(status: 'pending' | 'approved' | 'rejected', token: string): Promise<{ listings: Listing[] }> {
-  return request<{ listings: Listing[] }>('/api/listings/queue?status=' + status, {}, token)
-}
-
-export function getPendingCount(token: string): Promise<{ pending: number }> {
-  return request<{ pending: number }>('/api/listings/pending-count', {}, token)
-}
-
-export function reviewListing(id: string, decision: 'approve' | 'reject', note: string, token: string) {
-  return request<{ ok: boolean }>(
-    '/api/listings/' + encodeURIComponent(id) + '/review',
-    { method: 'POST', body: JSON.stringify({ decision, note }) },
-    token,
-  )
-}
-
-export type FeederSex = 'steers' | 'heifers' | 'bulls' | 'mixed'
-export type HornStatus = 'polled' | 'dehorned' | 'horned' | 'mixed'
-export type SaleType = 'private_treaty' | 'contract' | 'video'
+export type CattleKind = 'feeder' | 'breeding'
+export type MarketingMethod = 'auction' | 'off_ranch' | 'video_auction'
+export type SaleType = 'auction' | 'private_treaty' | 'off_ranch' | 'video_auction'
+export type SexClass = 'bull' | 'open_heifer' | 'bred_heifer' | 'cow' | 'cow_calf' | 'embryo_semen'
+export type BreedClass = 'purebred' | 'percentage' | 'composite' | 'commercial'
 export type PriceBasis = 'per_cwt' | 'per_head'
 
-export interface FeederLot {
+export interface Vaccination {
+  date: string | null
+  product: string
+}
+
+export interface EpdValue {
+  trait: string
+  value: number | null
+  unknown: boolean
+}
+
+interface ListingCommon {
   id: string
-  title: string
-  headCount: number
-  sex: FeederSex
-  avgWeight: number
-  weightLow: number | null
-  weightHigh: number | null
-  breed: string | null
-  ageMonths: number | null
-  weaned: boolean
-  weanedDays: number | null
-  healthProgram: string | null
-  hornStatus: HornStatus | null
-  bunkBroke: boolean
-  siredBy: string | null
-  saleType: SaleType | null
-  availableDate: string | null
-  city: string
+  headline: string
+  description: string | null
+  city: string | null
   state: string
-  priceBasis: PriceBasis | null
   askingPrice: number | null
   callForPrice: boolean
-  description: string | null
   status: ListingStatus
   approvedAt: string | null
   createdAt: string
+  distanceMiles?: number
   // Signed-in users:
   contactName?: string
   contactPhone?: string
@@ -362,74 +254,188 @@ export interface FeederLot {
   updatedAt?: string
 }
 
-export interface FeederList {
+export interface FeederListing extends ListingCommon {
+  groupId: string | null
+  steerCount: number
+  heiferCount: number
+  headCount: number
+  avgWeightSteers: number | null
+  avgWeightHeifers: number | null
+  avgWeight: number | null
+  birthDate: string | null
+  ageMonths: number | null
+  weanDate: string | null
+  daysWeaned: number | null
+  vetName: string | null
+  birthCountry: string
+  nutrition: string | null
+  breeds: string[]
+  preconditioning: string[]
+  special: string[]
+  vaccinations: Vaccination[]
+  marketingMethod: MarketingMethod
+  auctionNo: number | null
+  auctionName: string | null
+  marketingDate: string
+  priceBasis: PriceBasis | null
+  // Signed-in users:
+  tagVisualStart?: string | null
+  tagVisualEnd?: string | null
+  tagEidStart?: string | null
+  tagEidEnd?: string | null
+  // Owner and staff:
+  groupIdOptout?: boolean
+}
+
+export interface BreedingListing extends ListingCommon {
+  headCount: number
+  sexClass: SexClass
+  birthDate: string | null
+  ageMonths: number | null
+  regNumber: string | null
+  breeds: string[]
+  breedClass: BreedClass | null
+  primaryBreed: string | null
+  sire: string | null
+  dam: string | null
+  saleTitle: string | null
+  saleType: SaleType
+  auctionNo: number | null
+  auctionName: string | null
+  saleDate: string
+  epds: EpdValue[]
+}
+
+export interface ListingPage<T> {
   total: number
   page: number
   pageSize: number
-  lots: FeederLot[]
+  listings: T[]
 }
 
-export interface FeederQuery {
-  q?: string
-  sex?: string
-  state?: string
-  minWeight?: string
-  maxWeight?: string
-  page?: number
-}
+export type ListingInput = Record<string, unknown>
 
-export function listFeeders(query: FeederQuery, token?: string | null): Promise<FeederList> {
+export type SearchParams = Record<string, string | string[] | undefined>
+
+export function toQuery(params: SearchParams): string {
   const p = new URLSearchParams()
-  if (query.q) p.set('q', query.q)
-  if (query.sex) p.set('sex', query.sex)
-  if (query.state) p.set('state', query.state)
-  if (query.minWeight) p.set('minWeight', query.minWeight)
-  if (query.maxWeight) p.set('maxWeight', query.maxWeight)
-  if (query.page && query.page > 1) p.set('page', String(query.page))
+  for (const [k, v] of Object.entries(params)) {
+    if (Array.isArray(v)) v.forEach((x) => x && p.append(k, x))
+    else if (v) p.set(k, v)
+  }
   const qs = p.toString()
-  return request<FeederList>('/api/feeders' + (qs ? '?' + qs : ''), {}, token)
+  return qs ? '?' + qs : ''
 }
 
-export function getFeeder(id: string, token?: string | null): Promise<{ lot: FeederLot }> {
-  return request<{ lot: FeederLot }>('/api/feeders/' + encodeURIComponent(id), {}, token)
+const BASE: Record<CattleKind, string> = { feeder: '/api/feeder-listings', breeding: '/api/breeding-listings' }
+
+export function searchListings<T>(kind: CattleKind, params: SearchParams, token?: string | null): Promise<ListingPage<T>> {
+  return request<ListingPage<T>>(BASE[kind] + toQuery(params), {}, token)
 }
 
-export function getMyFeeders(token: string): Promise<{ lots: FeederLot[] }> {
-  return request<{ lots: FeederLot[] }>('/api/feeders/mine', {}, token)
+export function getCattleListing<T>(kind: CattleKind, id: string, token?: string | null): Promise<{ listing: T }> {
+  return request<{ listing: T }>(`${BASE[kind]}/${encodeURIComponent(id)}`, {}, token)
 }
 
-export function createFeeder(input: ListingInput, token: string): Promise<{ lot: FeederLot }> {
-  return request<{ lot: FeederLot }>('/api/feeders', { method: 'POST', body: JSON.stringify(input) }, token)
+export function getMyCattleListings<T>(kind: CattleKind, token: string): Promise<{ listings: T[] }> {
+  return request<{ listings: T[] }>(`${BASE[kind]}/mine`, {}, token)
 }
 
-export function updateFeeder(id: string, input: ListingInput, token: string): Promise<{ lot: FeederLot }> {
-  return request<{ lot: FeederLot }>(
-    '/api/feeders/' + encodeURIComponent(id),
-    { method: 'PUT', body: JSON.stringify(input) },
-    token,
-  )
+export function saveCattleListing<T>(kind: CattleKind, id: string | null, input: ListingInput, token: string): Promise<{ listing: T }> {
+  const url = id ? `${BASE[kind]}/${encodeURIComponent(id)}` : BASE[kind]
+  return request<{ listing: T }>(url, { method: id ? 'PUT' : 'POST', body: JSON.stringify(input) }, token)
 }
 
-export function closeFeeder(id: string, status: 'sold' | 'withdrawn', token: string): Promise<{ ok: boolean }> {
+export function closeCattleListing(kind: CattleKind, id: string, status: 'sold' | 'withdrawn', token: string): Promise<{ ok: boolean }> {
   return request<{ ok: boolean }>(
-    '/api/feeders/' + encodeURIComponent(id) + '/close',
+    `${BASE[kind]}/${encodeURIComponent(id)}/close`,
     { method: 'POST', body: JSON.stringify({ status }) },
     token,
   )
 }
 
-export function getFeederQueue(status: 'pending' | 'approved' | 'rejected', token: string): Promise<{ lots: FeederLot[] }> {
-  return request<{ lots: FeederLot[] }>('/api/feeders/queue?status=' + status, {}, token)
+export function getCattleQueue<T>(kind: CattleKind, status: 'pending' | 'approved' | 'rejected', token: string): Promise<{ listings: T[] }> {
+  return request<{ listings: T[] }>(`${BASE[kind]}/queue?status=${status}`, {}, token)
 }
 
-export function getFeederPendingCount(token: string): Promise<{ pending: number }> {
-  return request<{ pending: number }>('/api/feeders/pending-count', {}, token)
+export function getCattlePendingCount(kind: CattleKind, token: string): Promise<{ pending: number }> {
+  return request<{ pending: number }>(`${BASE[kind]}/pending-count`, {}, token)
 }
 
-export function reviewFeeder(id: string, decision: 'approve' | 'reject', note: string, token: string) {
+export function reviewCattleListing(kind: CattleKind, id: string, decision: 'approve' | 'reject', note: string, token: string) {
   return request<{ ok: boolean }>(
-    '/api/feeders/' + encodeURIComponent(id) + '/review',
+    `${BASE[kind]}/${encodeURIComponent(id)}/review`,
     { method: 'POST', body: JSON.stringify({ decision, note }) },
     token,
   )
 }
+
+// Pick lists (read live from BTN by the server)
+export interface Program {
+  name: string
+  type: 'PC' | 'SP'
+  image: string | null
+}
+export interface EpdTrait {
+  code: string
+  name: string
+  unit: string | null
+  description: string | null
+}
+export interface VaccineProduct {
+  id: number
+  name: string
+  company: string | null
+}
+export interface AuctionMarket {
+  id: number
+  auctionNo: number | null
+  name: string
+  zip: string | null
+}
+export interface ZipInfo {
+  zip: string
+  city: string
+  state: string
+  lat: number
+  lon: number
+}
+
+export const getBreeds = () => request<{ breeds: string[] }>('/api/ref/breeds')
+export const getPrograms = (type: 'PC' | 'SP') => request<{ programs: Program[] }>('/api/ref/programs?type=' + type)
+export const getEpdTraits = () => request<{ traits: EpdTrait[] }>('/api/ref/epd-traits')
+export const getCountries = () => request<{ countries: string[] }>('/api/ref/countries')
+export const getVaccineProducts = (q: string) => request<{ products: VaccineProduct[] }>('/api/ref/vaccine-products?q=' + encodeURIComponent(q))
+export const getAuctions = (q: string) => request<{ auctions: AuctionMarket[] }>('/api/ref/auctions?q=' + encodeURIComponent(q))
+export const getZip = (zip: string) => request<ZipInfo>('/api/ref/zip/' + encodeURIComponent(zip))
+export const getGroupId = (token: string) => request<{ groupId: string }>('/api/ref/group-id', {}, token)
+
+export function addVaccineProduct(name: string, company: string | null, token: string) {
+  return request<{ product: VaccineProduct; created: boolean }>(
+    '/api/ref/vaccine-products',
+    { method: 'POST', body: JSON.stringify({ name, company }) },
+    token,
+  )
+}
+
+export function addAuction(name: string, zip: string | null, token: string) {
+  return request<{ auction: AuctionMarket; created: boolean }>(
+    '/api/ref/auctions',
+    { method: 'POST', body: JSON.stringify({ name, zip }) },
+    token,
+  )
+}
+
+// Saved searches
+export interface SavedFilter {
+  id: string
+  kind: CattleKind
+  name: string
+  params: Record<string, string | string[]>
+}
+export const getSavedFilters = (kind: CattleKind, token: string) =>
+  request<{ filters: SavedFilter[] }>('/api/saved-filters?kind=' + kind, {}, token)
+export const saveFilter = (kind: CattleKind, name: string, params: Record<string, string | string[]>, token: string) =>
+  request<{ filter: SavedFilter }>('/api/saved-filters', { method: 'POST', body: JSON.stringify({ kind, name, params }) }, token)
+export const deleteFilter = (id: string, token: string) =>
+  request<{ ok: boolean }>('/api/saved-filters/' + encodeURIComponent(id), { method: 'DELETE' }, token)

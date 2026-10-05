@@ -1,10 +1,11 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
 afterEach(() => {
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
 
 function renderApp() {
@@ -15,36 +16,30 @@ function renderApp() {
   )
 }
 
-describe('Home page', () => {
-  it('shows the title and buttons', () => {
+describe('Home page and menu', () => {
+  it('shows the title and the two main choices', () => {
     vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})))
     renderApp()
-    expect(
-      screen.getByRole('heading', { name: 'Red Angus Marketing Portal' }),
-    ).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /search cattle/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Red Angus Marketing Portal' })).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: /search for cattle/i }).length).toBeGreaterThan(0)
+    const menu = screen.getAllByRole('link', { name: /list your cattle/i })
+    expect(menu.length).toBeGreaterThan(0)
   })
 
-  it('shows connected when the API answers', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => ({
-        ok: true,
-        json: async () => ({ status: 'ok', service: 'raaaa-api', timestamp: 'now' }),
-      })),
-    )
+  it('main menu goes to the feeder tabs first', () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})))
     renderApp()
-    await waitFor(() => expect(screen.getByText('connected')).toBeInTheDocument())
+    const search = screen.getAllByRole('link', { name: /search for cattle/i })
+    expect(search.some((a) => a.getAttribute('href') === '/search/feeder')).toBe(true)
+    const list = screen.getAllByRole('link', { name: /list your cattle/i })
+    expect(list.some((a) => a.getAttribute('href') === '/list/feeder')).toBe(true)
   })
 
-  it('shows not reachable when the API fails', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => {
-        throw new Error('network')
-      }),
-    )
+  it('puts Sale barns in the footer for everyone', () => {
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})))
     renderApp()
-    await waitFor(() => expect(screen.getByText('not reachable')).toBeInTheDocument())
+    const links = screen.getAllByRole('link', { name: 'Sale barns' })
+    expect(links.some((a) => a.getAttribute('href') === '/barns')).toBe(true)
+    expect(screen.queryByRole('button', { name: /staff tools/i })).toBeNull()
   })
 })
