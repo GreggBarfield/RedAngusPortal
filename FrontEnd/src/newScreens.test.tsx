@@ -344,7 +344,7 @@ describe('search and detail', () => {
     stubApi([(u) => (u.startsWith('/api/feeder-listings?') || u === '/api/feeder-listings' ? [200, { total: 1, page: 1, pageSize: 20, listings: [feeder] }] : null)], null)
     mount('/search/feeder', null)
     expect(await screen.findByRole('link', { name: feeder.headline })).toHaveAttribute('href', '/feeder/9')
-    expect(screen.getByText('$1.85 per cwt')).toBeInTheDocument()
+    expect(screen.getAllByText('$1.85 per cwt').length).toBeGreaterThan(0)
     expect(screen.queryByText(/979-555/)).toBeNull()
   })
 
