@@ -239,6 +239,7 @@ describe('feeder listing form', () => {
     const box = screen.getByLabelText('Breed(s)')
     fireEvent.change(box, { target: { value: 'Red Angus' } })
     fireEvent.keyDown(box, { key: 'Enter' })
+    fireEvent.click(screen.getByRole('button', { name: 'Preconditioning programs' }))
     fireEvent.click(screen.getByLabelText('Weaned 45 Days'))
     fireEvent.change(screen.getByLabelText('Marketing method'), { target: { value: 'off_ranch' } })
     fireEvent.change(screen.getByLabelText('Marketing date'), { target: { value: '2026-11-15' } })

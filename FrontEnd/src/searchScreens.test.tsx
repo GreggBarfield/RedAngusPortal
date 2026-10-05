@@ -379,3 +379,23 @@ describe('saved filters', () => {
     expect(within(box).getByRole('button', { name: 'Save' })).toBeDisabled()
   })
 })
+
+describe('program drop-downs on the feeder form', () => {
+  it('sit beside the breed box, open on click, show tags and close when you click away', async () => {
+    stubApi([(u) => (u.startsWith('/api/ref/group-id') ? [200, { groupId: 'MEMBER100' }] : u.startsWith('/api/ref/countries') ? [200, { countries: ['United States'] }] : null)], member)
+    mount('/list/feeder', member)
+    const pc = await screen.findByRole('button', { name: 'Preconditioning programs' })
+    expect(pc).toHaveTextContent('Select...')
+    expect(screen.getByRole('button', { name: 'Special programs' })).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Preconditioning programs choices' })).toBeNull()
+    fireEvent.click(pc)
+    fireEvent.click(await screen.findByLabelText('Weaned 45 Days'))
+    expect(pc).toHaveTextContent('1 selected')
+    const tags = screen.getByRole('list', { name: 'Chosen: Preconditioning programs' })
+    expect(within(tags).getByText('Weaned 45 Days')).toBeInTheDocument()
+    fireEvent.mouseDown(document.body)
+    expect(screen.queryByRole('group', { name: 'Preconditioning programs choices' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Weaned 45 Days' }))
+    expect(pc).toHaveTextContent('Select...')
+  })
+})

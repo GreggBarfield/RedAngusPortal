@@ -1,9 +1,10 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
+import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // A titled block of the page with a divider under the heading (like BlockTrust's sections).
@@ -122,6 +123,77 @@ export function CheckGroup({ legend, options, selected, onChange, error }: { leg
       </div>
       {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
     </fieldset>
+  )
+}
+
+// A drop-down you can tick several choices in (programs). The choices also show as small tags underneath.
+export function MultiSelect({ id, label, options, selected, onChange, error, hint }: { id: string; label: string; options: string[]; selected: string[]; onChange: (v: string[]) => void; error?: string; hint?: string }) {
+  const [open, setOpen] = useState(false)
+  const box = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const away = (e: MouseEvent) => {
+      if (box.current && !box.current.contains(e.target as Node)) setOpen(false)
+    }
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', away)
+    document.addEventListener('keydown', esc)
+    return () => {
+      document.removeEventListener('mousedown', away)
+      document.removeEventListener('keydown', esc)
+    }
+  }, [open])
+
+  return (
+    <div className="grid content-start gap-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <div ref={box} className="relative">
+        <button
+          id={id}
+          type="button"
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          aria-invalid={error ? true : undefined}
+          onClick={() => setOpen((o) => !o)}
+          className="flex h-9 w-full items-center justify-between gap-2 rounded-md border bg-background px-3 py-1 text-left text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-[invalid=true]:border-destructive"
+        >
+          <span className={cn('truncate', selected.length === 0 && 'text-muted-foreground')}>{selected.length === 0 ? 'Select...' : `${selected.length} selected`}</span>
+          <ChevronDown className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        </button>
+        {open && (
+          <div role="group" aria-label={`${label} choices`} className="absolute left-0 top-full z-20 mt-1 max-h-72 w-max min-w-full max-w-[min(28rem,90vw)] overflow-y-auto rounded-md border bg-card p-2 shadow-md">
+            {options.length === 0 && <p className="px-1 py-1 text-sm text-muted-foreground">Nothing to choose from.</p>}
+            <div className="grid gap-1.5">
+              {options.map((o, i) => (
+                <Check key={o} id={`${id}-opt-${i}`} label={o} checked={selected.includes(o)} onChange={(on) => onChange(on ? [...selected, o] : selected.filter((x) => x !== o))} />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      {selected.length > 0 && (
+        <ul className="flex flex-wrap gap-2" aria-label={`Chosen: ${label}`}>
+          {selected.map((s) => (
+            <li key={s} className="inline-flex items-center gap-1 rounded-md border bg-secondary px-2 py-1 text-sm">
+              {s}
+              <button type="button" aria-label={`Remove ${s}`} className="text-muted-foreground hover:text-foreground" onClick={() => onChange(selected.filter((x) => x !== s))}>
+                x
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      ) : hint ? (
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      ) : null}
+    </div>
   )
 }
 

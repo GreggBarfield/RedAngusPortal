@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { Check, ChipPicker, CheckGroup, Field, FormBanner, Section, SelectField, Span, TextArea, TextField } from '@/components/form'
+import { Check, ChipPicker, Field, FormBanner, Section, MultiSelect, SelectField, Span, TextArea, TextField } from '@/components/form'
 import { AuctionPicker, ContactFields, PlaceFields, PriceFields, ProductPicker } from '@/components/formParts'
 import { Input } from '@/components/ui/input'
 import { ApiError, getBreeds, getCattleListing, getCountries, getGroupId, getPrograms, saveCattleListing } from '@/lib/api'
@@ -275,17 +275,14 @@ export default function FeederForm() {
         <TextField id="avgWeightHeifers" label="Average weight - heifers (lbs)" value={form.avgWeightHeifers} onChange={(v) => set('avgWeightHeifers', v.replace(/\D/g, ''))} error={errors.avgWeightHeifers} inputMode="numeric" />
 
         <TextField id="totalHead" label="Total head" value={String(total)} onChange={() => {}} readOnly hint="Steers plus heifers." />
-        <Span cols={3}>
-          <ChipPicker id="breeds" label="Breed(s)" options={breeds} selected={form.breeds} onChange={(v) => set('breeds', v)} max={10} error={errors.breeds} hint="Choose from the list. Up to 10." />
-        </Span>
+        <ChipPicker id="breeds" label="Breed(s)" options={breeds} selected={form.breeds} onChange={(v) => set('breeds', v)} max={10} error={errors.breeds} hint="Choose from the list. Up to 10." />
+        <MultiSelect id="preconditioning" label="Preconditioning programs" options={pc} selected={form.preconditioning} onChange={(v) => set('preconditioning', v)} error={errors.preconditioning} />
+        <MultiSelect id="special" label="Special programs" options={sp} selected={form.special} onChange={(v) => set('special', v)} error={errors.special} />
 
         <TextField id="birthDate" label="Birth date" type="date" value={form.birthDate} onChange={(v) => set('birthDate', v)} error={errors.birthDate} />
         <TextField id="weanDate" label="Wean date" type="date" value={form.weanDate} onChange={(v) => set('weanDate', v)} error={errors.weanDate} />
         <TextField id="vetName" label="Veterinarian" value={form.vetName} onChange={(v) => set('vetName', v)} error={errors.vetName} />
         <SelectField id="birthCountry" label="Country of birth" value={form.birthCountry} onChange={(v) => set('birthCountry', v)} error={errors.birthCountry} blank="Choose a country" options={countries.map((c) => [c, c])} />
-
-        <CheckGroup legend="Preconditioning programs" options={pc} selected={form.preconditioning} onChange={(v) => set('preconditioning', v)} error={errors.preconditioning} />
-        <CheckGroup legend="Special programs" options={sp} selected={form.special} onChange={(v) => set('special', v)} error={errors.special} />
 
         <Span>
           <TextArea id="description" label="Description" value={form.description} onChange={(v) => set('description', v)} error={errors.description} rows={4} />
