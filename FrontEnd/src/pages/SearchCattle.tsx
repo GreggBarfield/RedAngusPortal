@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import CattleTabs from '@/components/CattleTabs'
 import ListingPanel from '@/components/ListingPanel'
+import { CoverThumb } from '@/components/Media'
 import { Page } from '@/components/Page'
 import SavedFilters from '@/components/SavedFilters'
 import SearchFilters from '@/components/SearchFilters'
@@ -179,7 +180,10 @@ export default function SearchCattle({ kind }: { kind: CattleKind }) {
                   onClick={() => setSelectedId(l.id)}
                   className={cn('grid cursor-pointer gap-1 rounded-lg border bg-card px-5 py-4 shadow-sm sm:grid-cols-[1fr_auto] sm:items-center', on && 'border-primary ring-1 ring-primary')}
                 >
-                  <div>{kind === 'feeder' ? <FeederCard l={l as FeederListing} /> : <BreedingCard l={l as BreedingListing} />}</div>
+                  <div className="flex items-center gap-4">
+                    <CoverThumb photos={l.photos} />
+                    <div>{kind === 'feeder' ? <FeederCard l={l as FeederListing} /> : <BreedingCard l={l as BreedingListing} />}</div>
+                  </div>
                   <div className="flex items-center gap-3 sm:flex-col sm:items-end">
                     <p className="text-lg font-semibold">{formatPrice(l as FeederListing)}</p>
                     <Button type="button" size="sm" variant={on ? 'secondary' : 'outline'} className="hidden lg:inline-flex" aria-pressed={on} onClick={() => setSelectedId(l.id)}>

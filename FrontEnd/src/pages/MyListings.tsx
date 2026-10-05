@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { CoverThumb } from '@/components/Media'
 import { Page } from '@/components/Page'
 import { getMyCattleListings } from '@/lib/api'
 import type { BreedingListing, CattleKind, FeederListing } from '@/lib/api'
@@ -25,14 +26,17 @@ function Group({ kind, title, items }: { kind: CattleKind; title: string; items:
         {items.map((l) => (
           <Card key={l.id}>
             <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
-              <div>
-                <Link to={`/${kind}/${l.id}`} className="font-medium text-primary underline">
-                  {l.headline}
-                </Link>
-                <p className="text-sm text-muted-foreground">
-                  {placeText(l)} - {formatPrice(l as FeederListing)}
-                </p>
-                {l.status === 'rejected' && l.reviewNote && <p className="mt-1 text-sm text-destructive">Note from the reviewer: {l.reviewNote}</p>}
+              <div className="flex items-center gap-4">
+                <CoverThumb photos={l.photos} />
+                <div>
+                  <Link to={`/${kind}/${l.id}`} className="font-medium text-primary underline">
+                    {l.headline}
+                  </Link>
+                  <p className="text-sm text-muted-foreground">
+                    {placeText(l)} - {formatPrice(l as FeederListing)}
+                  </p>
+                  {l.status === 'rejected' && l.reviewNote && <p className="mt-1 text-sm text-destructive">Note from the reviewer: {l.reviewNote}</p>}
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant={l.status === 'rejected' ? 'destructive' : l.status === 'approved' ? 'default' : 'secondary'}>{STATUS_LABELS[l.status]}</Badge>

@@ -167,9 +167,12 @@ function shape(row, level, now = new Date()) {
     status: row.status,
     approvedAt: row.approved_at,
     createdAt: row.created_at,
+    photos: row.photos || [],
+    attachmentCount: (row.attachments || []).length,
   };
   if (row.distance_miles != null) out.distanceMiles = Math.round(row.distance_miles);
   if (level === 'public') return out;
+  out.attachments = row.attachments || [];
   out.contactName = row.contact_name;
   out.contactPhone = row.contact_phone;
   out.contactEmail = row.contact_email;

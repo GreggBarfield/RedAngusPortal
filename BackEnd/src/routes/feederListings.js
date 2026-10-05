@@ -235,9 +235,12 @@ function shape(row, level, now = new Date()) {
     status: row.status,
     approvedAt: row.approved_at,
     createdAt: row.created_at,
+    photos: row.photos || [],
+    attachmentCount: (row.attachments || []).length,
   };
   if (row.distance_miles != null) out.distanceMiles = Math.round(row.distance_miles);
   if (level === 'public') return out;
+  out.attachments = row.attachments || [];
   out.tagVisualStart = row.tag_visual_start;
   out.tagVisualEnd = row.tag_visual_end;
   out.tagEidStart = row.tag_eid_start;

@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { DocumentList, PhotoGallery, hasDocuments } from '@/components/Media'
 import { Page, Row } from '@/components/Page'
 import { ApiError, closeCattleListing, getCattleListing } from '@/lib/api'
 import type { BreedingListing, CattleKind, FeederListing } from '@/lib/api'
@@ -228,7 +229,15 @@ export default function CattleDetail({ kind }: { kind: CattleKind }) {
       )}
 
       <div className="mt-6 grid items-start gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="grid gap-6">{kind === 'feeder' ? <FeederBody l={listing as FeederListing} /> : <BreedingBody l={listing as BreedingListing} />}</div>
+        <div className="grid gap-6">
+          {(listing.photos ?? []).length > 0 && <PhotoGallery key={listing.id} photos={listing.photos} />}
+          {kind === 'feeder' ? <FeederBody l={listing as FeederListing} /> : <BreedingBody l={listing as BreedingListing} />}
+          {hasDocuments(listing, !!user) && (
+            <Block title="Documents">
+              <DocumentList kind={kind} listing={listing} />
+            </Block>
+          )}
+        </div>
         <Block title="Seller">
           {user ? (
             <dl className="grid gap-2">

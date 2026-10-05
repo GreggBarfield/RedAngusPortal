@@ -1,5 +1,6 @@
 'use strict';
 const { likePattern, params: makeParams, distanceSql } = require('./common');
+const { attachMedia } = require('./media');
 
 const COLUMNS = `f.id, f.owner_id, f.group_id, f.group_id_optout, f.breed_mode, f.headline, f.steer_count, f.heifer_count,
   f.head_count, f.avg_weight_steers, f.avg_weight_heifers, f.avg_weight, f.birth_date::text AS birth_date,
@@ -112,6 +113,7 @@ async function attach(db, rows) {
     row.programs = programs.get(k) || [];
     row.vaccinations = vacc.get(k) || [];
   }
+  await attachMedia(db, 'feeder', rows);
   return rows;
 }
 

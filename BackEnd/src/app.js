@@ -18,6 +18,10 @@ const { createBreedingListingsRepo } = require('./breedingListings');
 const { createBreedingListingsRouter } = require('./routes/breedingListings');
 const { createSavedFiltersRepo } = require('./savedFilters');
 const { createSavedFiltersRouter } = require('./routes/savedFilters');
+const { createMediaRepo } = require('./media');
+const { createMediaRouter } = require('./routes/media');
+const { createStorage } = require('./s3');
+const { createFileStore } = require('./files');
 
 // createApp takes the database helper (and optionally config and any repo) as
 // arguments so tests can pass fakes. The old feeders/listings repos serve the
@@ -34,6 +38,10 @@ function createApp({
   feederListings = createFeederListingsRepo(db),
   breedingListings = createBreedingListingsRepo(db),
   savedFilters = createSavedFiltersRepo(db),
+  media = createMediaRepo(db),
+  storage = createStorage({ config }),
+  files = createFileStore({ config }),
+  images,
   now,
 }) {
   const app = express();
@@ -71,12 +79,18 @@ function createApp({
   app.use('/api/breeding-listings', createBreedingListingsRouter({ breeding: breedingListings, users, config, geo, now }));
   app.use('/api/saved-filters', createSavedFiltersRouter({ filters: savedFilters, users, config }));
 
+  // Photos and attachments on the new listings.
+  const mediaDeps = { media, storage, files, users, config, images, now };
+  app.use('/api/feeder-listings/:id', createMediaRouter({ kind: 'feeder', listings: feederListings, ...mediaDeps }));
+  app.use('/api/breeding-listings/:id', createMediaRouter({ kind: 'breeding', listings: breedingListings, ...mediaDeps }));
+
   app.use('/api', (req, res) => {
     res.status(404).json({ error: 'not_found' });
   });
 
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, next) => {
+    if (err && err.type === 'entity.too.large') return res.status(413).json({ error: 'too_large' });
     console.error('unhandled error:', err);
     res.status(500).json({ error: 'server_error' });
   });

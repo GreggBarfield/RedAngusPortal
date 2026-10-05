@@ -14,7 +14,7 @@ const maybe = url ? describe : describe.skip;
 const NOW = new Date('2026-10-04T12:00:00Z');
 
 const DROP =
-  'DROP TABLE IF EXISTS saved_filters, breeding_listing_epds, breeding_listing_breeds, breeding_listings, feeder_listing_vaccinations, feeder_listing_programs, feeder_listing_breeds, feeder_listings, feeder_lots, listings, barn_contact_log, barn_settings, users, schema_migrations CASCADE';
+  'DROP TABLE IF EXISTS saved_filters, raa_listing_attachments, raa_listing_photos, breeding_listing_epds, breeding_listing_breeds, breeding_listings, feeder_listing_vaccinations, feeder_listing_programs, feeder_listing_breeds, feeder_listings, feeder_lots, listings, barn_contact_log, barn_settings, users, schema_migrations CASCADE';
 
 const FEEDER = {
   groupId: 'PAT100',

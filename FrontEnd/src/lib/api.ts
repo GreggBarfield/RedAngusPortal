@@ -230,6 +230,26 @@ export interface EpdValue {
   unknown: boolean
 }
 
+export type DocType = 'health_records' | 'pedigree' | 'epd_report' | 'sale_sheet' | 'other'
+
+export interface ListingPhoto {
+  id: string
+  thumbUrl: string
+  mediumUrl: string
+  fullUrl: string
+  isCover: boolean
+  width?: number | null
+  height?: number | null
+}
+
+export interface ListingAttachment {
+  id: string
+  name: string
+  ext: string
+  docType: DocType
+  size: number
+}
+
 interface ListingCommon {
   id: string
   headline: string
@@ -242,7 +262,11 @@ interface ListingCommon {
   approvedAt: string | null
   createdAt: string
   distanceMiles?: number
+  // Everyone (the cover photo comes first):
+  photos?: ListingPhoto[]
+  attachmentCount?: number
   // Signed-in users:
+  attachments?: ListingAttachment[]
   contactName?: string
   contactPhone?: string
   contactEmail?: string
@@ -441,3 +465,60 @@ export const saveFilter = (kind: CattleKind, name: string, params: Record<string
   request<{ filter: SavedFilter }>('/api/saved-filters', { method: 'POST', body: JSON.stringify({ kind, name, params }) }, token)
 export const deleteFilter = (id: string, token: string) =>
   request<{ ok: boolean }>('/api/saved-filters/' + encodeURIComponent(id), { method: 'DELETE' }, token)
+
+// Photos and attachments. The file itself is the request body (one file per request).
+async function sendFile<T>(path: string, file: Blob, token: string): Promise<T> {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/octet-stream', Authorization: `Bearer ${token}` },
+    body: file,
+  })
+  let data: unknown = null
+  try {
+    data = await res.json()
+  } catch {
+    data = null
+  }
+  if (!res.ok) {
+    const body = (data ?? {}) as { error?: string; fields?: Record<string, string> }
+    throw new ApiError(res.status, body.error ?? 'request_failed', body.fields ?? {})
+  }
+  return data as T
+}
+
+const mediaPath = (kind: CattleKind, id: string) => `${BASE[kind]}/${encodeURIComponent(id)}`
+
+export const uploadPhoto = (kind: CattleKind, id: string, file: Blob, token: string) =>
+  sendFile<{ photo: ListingPhoto }>(`${mediaPath(kind, id)}/photos`, file, token)
+
+export const deletePhoto = (kind: CattleKind, id: string, photoId: string, token: string) =>
+  request<{ ok: boolean }>(`${mediaPath(kind, id)}/photos/${encodeURIComponent(photoId)}`, { method: 'DELETE' }, token)
+
+export const setCoverPhoto = (kind: CattleKind, id: string, photoId: string, token: string) =>
+  request<{ ok: boolean }>(`${mediaPath(kind, id)}/photos/${encodeURIComponent(photoId)}/cover`, { method: 'POST' }, token)
+
+export const uploadAttachment = (kind: CattleKind, id: string, file: File, docType: DocType, token: string) =>
+  sendFile<{ attachment: ListingAttachment }>(
+    `${mediaPath(kind, id)}/attachments?name=${encodeURIComponent(file.name)}&docType=${encodeURIComponent(docType)}`,
+    file,
+    token,
+  )
+
+export const deleteAttachment = (kind: CattleKind, id: string, attId: string, token: string) =>
+  request<{ ok: boolean }>(`${mediaPath(kind, id)}/attachments/${encodeURIComponent(attId)}`, { method: 'DELETE' }, token)
+
+// The browser cannot send the sign-in header with a plain link, so the file is fetched
+// with it and then handed to the person as a download.
+export async function downloadAttachment(kind: CattleKind, id: string, att: ListingAttachment, token: string): Promise<void> {
+  const res = await fetch(`${mediaPath(kind, id)}/attachments/${encodeURIComponent(att.id)}/file`, { headers: { Authorization: `Bearer ${token}` } })
+  if (!res.ok) throw new ApiError(res.status, 'request_failed')
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = att.name
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 2000)
+}

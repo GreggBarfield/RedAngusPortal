@@ -1,5 +1,6 @@
 'use strict';
 const { likePattern, params: makeParams, distanceSql } = require('./common');
+const { attachMedia } = require('./media');
 
 const COLUMNS = `l.id, l.owner_id, l.head_count, l.sex_class, l.birth_date::text AS birth_date, l.reg_number,
   l.breed_class, l.primary_breed, l.sire, l.dam, l.headline, l.description, l.sale_title, l.sale_type,
@@ -85,6 +86,7 @@ async function attach(db, rows) {
     row.breeds = breeds.get(k) || [];
     row.epds = epds.get(k) || [];
   }
+  await attachMedia(db, 'breeding', rows);
   return rows;
 }
 

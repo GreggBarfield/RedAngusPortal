@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+import { MediaSection } from '@/components/Media'
 import { Check, Field, MultiSelect, FormBanner, Section, SelectField, Span, TextArea, TextField } from '@/components/form'
 import { AuctionPicker, ContactFields, PlaceFields, PriceFields } from '@/components/formParts'
 import { ApiError, getBreeds, getCattleListing, getEpdTraits, saveCattleListing } from '@/lib/api'
-import type { BreedingListing, EpdTrait } from '@/lib/api'
+import type { BreedingListing, EpdTrait, ListingAttachment, ListingPhoto } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import { BREED_CLASS_LABELS, SALE_TYPE_LABELS, SEX_CLASS_LABELS } from '@/lib/cattle'
+import { emptyDraft, uploadDraft } from '@/lib/media'
 
 interface EpdRow {
   key: number
@@ -142,11 +144,15 @@ export default function BreedingForm() {
   const editing = Boolean(id)
   const { user, token } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [form, setForm] = useState<Form>(() => blankForm(user?.displayName ?? '', user?.email ?? ''))
   const [breeds, setBreeds] = useState<string[]>([])
   const [traits, setTraits] = useState<EpdTrait[]>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [banner, setBanner] = useState('')
+  const [banner, setBanner] = useState((location.state as { notice?: string } | null)?.notice ?? '')
+  const [photos, setPhotos] = useState<ListingPhoto[]>([])
+  const [docs, setDocs] = useState<ListingAttachment[]>([])
+  const [draft, setDraft] = useState(emptyDraft)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const bannerRef = useRef<HTMLDivElement>(null)
@@ -173,6 +179,8 @@ export default function BreedingForm() {
             return
           }
           setForm(fromListing(r.listing))
+          setPhotos(r.listing.photos ?? [])
+          setDocs(r.listing.attachments ?? [])
         } catch {
           if (!cancelled) setBanner('Could not load that listing.')
         }
@@ -199,6 +207,14 @@ export default function BreedingForm() {
     setErrors({})
     try {
       const r = await saveCattleListing<BreedingListing>('breeding', editing ? (id ?? null) : null, toPayload(form), token)
+      const problems = await uploadDraft('breeding', r.listing.id, draft, token)
+      if (problems.length > 0) {
+        // The listing is saved. Go to its edit page so the files can be added again (not saved twice).
+        navigate(`/list/breeding/${r.listing.id}/edit`, {
+          state: { notice: `Your listing was saved, but some files did not go through: ${problems.join(' ')} Add them again below.` },
+        })
+        return
+      }
       navigate('/my-listings', { state: { saved: r.listing.headline, edited: editing } })
     } catch (err) {
       if (err instanceof ApiError && err.status === 400) {
@@ -249,6 +265,8 @@ export default function BreedingForm() {
           <TextArea id="description" label="Description" value={form.description} onChange={(v) => set('description', v)} error={errors.description} rows={4} />
         </Span>
       </Section>
+
+      <MediaSection kind="breeding" listingId={editing ? (id ?? null) : null} token={token} photos={photos} docs={docs} onExisting={(a, b) => { setPhotos(a); setDocs(b) }} draft={draft} onDraft={setDraft} />
 
       <Section title="EPDs" hint="Add the EPDs you have. Leave the value blank or check Unknown when you do not have one.">
         <div className="col-span-full grid gap-4">

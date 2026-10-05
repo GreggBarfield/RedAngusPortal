@@ -21,7 +21,7 @@ maybe('barns repo (real Postgres)', () => {
   beforeAll(async () => {
     app = new Client({ connectionString: url });
     await app.connect();
-    await app.query('DROP TABLE IF EXISTS saved_filters, breeding_listing_epds, breeding_listing_breeds, breeding_listings, feeder_listing_vaccinations, feeder_listing_programs, feeder_listing_breeds, feeder_listings, feeder_lots, listings, barn_contact_log, barn_settings, users, schema_migrations CASCADE');
+    await app.query('DROP TABLE IF EXISTS saved_filters, raa_listing_attachments, raa_listing_photos, breeding_listing_epds, breeding_listing_breeds, breeding_listings, feeder_listing_vaccinations, feeder_listing_programs, feeder_listing_breeds, feeder_listings, feeder_lots, listings, barn_contact_log, barn_settings, users, schema_migrations CASCADE');
     await runMigrations({ connectionString: url, log: quiet });
     userId = (
       await app.query(
@@ -49,7 +49,7 @@ maybe('barns repo (real Postgres)', () => {
     });
   });
   afterAll(async () => {
-    await app.query('DROP TABLE IF EXISTS saved_filters, breeding_listing_epds, breeding_listing_breeds, breeding_listings, feeder_listing_vaccinations, feeder_listing_programs, feeder_listing_breeds, feeder_listings, feeder_lots, listings, barn_contact_log, barn_settings, users, schema_migrations CASCADE');
+    await app.query('DROP TABLE IF EXISTS saved_filters, raa_listing_attachments, raa_listing_photos, breeding_listing_epds, breeding_listing_breeds, breeding_listings, feeder_listing_vaccinations, feeder_listing_programs, feeder_listing_breeds, feeder_listings, feeder_lots, listings, barn_contact_log, barn_settings, users, schema_migrations CASCADE');
     await btnClient.query('DROP TABLE IF EXISTS public.auction_barns');
     await app.end();
     await btnClient.end();

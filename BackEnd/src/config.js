@@ -16,6 +16,14 @@ const config = {
   // BTN's pick lists and zip codes (breeds, programs, vaccine products, auction
   // markets, EPD traits): read, plus adding new vaccine products and auctions.
   refDatabaseUrl: process.env.REF_DATABASE_URL || '',
+  // Photos go in BTN's S3 bucket, under listings/raa/ only. Attachments are
+  // saved in a folder on the BTN server.
+  awsRegion: process.env.AWS_REGION || '',
+  awsAccessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+  awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  s3Bucket: process.env.S3_BUCKET_NAME || '',
+  s3BaseUrl: (process.env.S3_BASE_URL || '').replace(/\/+$/, ''),
+  attachDir: process.env.ATTACH_DIR || '',
 };
 
 module.exports = config;

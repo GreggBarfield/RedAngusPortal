@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Check, Field, FormBanner, Section, MultiSelect, SelectField, Span, TextArea, TextField } from '@/components/form'
 import { AuctionPicker, BreedMakeup, ContactFields, PlaceFields, PriceFields, ProductPicker } from '@/components/formParts'
 import { Input } from '@/components/ui/input'
+import { MediaSection } from '@/components/Media'
 import { ApiError, getBreeds, getCattleListing, getCountries, getGroupId, getPrograms, saveCattleListing } from '@/lib/api'
-import type { FeederListing } from '@/lib/api'
+import type { FeederListing, ListingAttachment, ListingPhoto } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import { METHOD_LABELS } from '@/lib/cattle'
+import { emptyDraft, uploadDraft } from '@/lib/media'
 
 interface Row {
   key: number
@@ -181,13 +183,17 @@ export default function FeederForm() {
   const editing = Boolean(id)
   const { user, token } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [form, setForm] = useState<Form>(() => blankForm(user?.displayName ?? '', user?.email ?? ''))
   const [breeds, setBreeds] = useState<string[]>([])
   const [pc, setPc] = useState<string[]>([])
   const [sp, setSp] = useState<string[]>([])
   const [countries, setCountries] = useState<string[]>(['United States'])
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [banner, setBanner] = useState('')
+  const [banner, setBanner] = useState((location.state as { notice?: string } | null)?.notice ?? '')
+  const [photos, setPhotos] = useState<ListingPhoto[]>([])
+  const [docs, setDocs] = useState<ListingAttachment[]>([])
+  const [draft, setDraft] = useState(emptyDraft)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const bannerRef = useRef<HTMLDivElement>(null)
@@ -216,6 +222,8 @@ export default function FeederForm() {
             return
           }
           setForm(fromListing(r.listing))
+          setPhotos(r.listing.photos ?? [])
+          setDocs(r.listing.attachments ?? [])
         } catch {
           if (!cancelled) setBanner('Could not load that listing.')
         }
@@ -246,6 +254,14 @@ export default function FeederForm() {
     setErrors({})
     try {
       const r = await saveCattleListing<FeederListing>('feeder', editing ? (id ?? null) : null, toPayload(form), token)
+      const problems = await uploadDraft('feeder', r.listing.id, draft, token)
+      if (problems.length > 0) {
+        // The listing is saved. Go to its edit page so the files can be added again (not saved twice).
+        navigate(`/list/feeder/${r.listing.id}/edit`, {
+          state: { notice: `Your listing was saved, but some files did not go through: ${problems.join(' ')} Add them again below.` },
+        })
+        return
+      }
       navigate('/my-listings', { state: { saved: r.listing.headline, edited: editing } })
     } catch (err) {
       if (err instanceof ApiError && err.status === 400) {
@@ -306,6 +322,8 @@ export default function FeederForm() {
           <TextArea id="description" label="Description" value={form.description} onChange={(v) => set('description', v)} error={errors.description} rows={4} />
         </Span>
       </Section>
+
+      <MediaSection kind="feeder" listingId={editing ? (id ?? null) : null} token={token} photos={photos} docs={docs} onExisting={(a, b) => { setPhotos(a); setDocs(b) }} draft={draft} onDraft={setDraft} />
 
       <Section title="Vaccinations / Medications" hint="List each product given and the date. Leave blank if none.">
         <div className="col-span-full grid gap-4">

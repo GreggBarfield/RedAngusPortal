@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { DocumentList, PhotoGallery, hasDocuments } from '@/components/Media'
 import { Row } from '@/components/Page'
 import type { BreedingListing, CattleKind, FeederListing } from '@/lib/api'
 import { BREED_CLASS_LABELS, breedText, METHOD_LABELS, SALE_TYPE_LABELS, SEX_CLASS_LABELS, formatDate, formatPrice, placeText } from '@/lib/cattle'
@@ -102,8 +103,15 @@ export default function ListingPanel({ kind, listing, signedIn }: { kind: Cattle
         </p>
         <p className="mt-1 text-lg font-semibold">{formatPrice(l)}</p>
       </div>
+      {(l.photos ?? []).length > 0 && <PhotoGallery key={l.id} photos={l.photos} />}
       {l.description && <p className="whitespace-pre-line text-sm">{l.description}</p>}
       {kind === 'feeder' ? <FeederFacts l={l as FeederListing} /> : <BreedingFacts l={l as BreedingListing} />}
+      {hasDocuments(l, signedIn) && (
+        <section className="border-t pt-3">
+          <h3 className="mb-2 text-sm font-semibold">Documents</h3>
+          <DocumentList kind={kind} listing={l} />
+        </section>
+      )}
       <Group title="Seller">
         {signedIn ? (
           <>

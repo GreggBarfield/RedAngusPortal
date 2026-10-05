@@ -18,7 +18,7 @@ export default function ListCattle({ kind }: { kind: CattleKind }) {
           <CattleTabs area="list" active={kind} />
         </div>
       )}
-      <div className="mt-6">{kind === 'feeder' ? <FeederForm /> : <BreedingForm />}</div>
+      <div className="mt-6">{kind === 'feeder' ? <FeederForm key={id ?? 'new'} /> : <BreedingForm key={id ?? 'new'} />}</div>
     </Page>
   )
 }

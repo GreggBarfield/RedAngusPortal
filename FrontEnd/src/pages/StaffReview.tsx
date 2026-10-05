@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
+import { DocumentList, PhotoStrip, hasDocuments } from '@/components/Media'
 import { Page } from '@/components/Page'
 import { ApiError, getCattleQueue, reviewCattleListing } from '@/lib/api'
 import type { BreedingListing, CattleKind, FeederListing } from '@/lib/api'
@@ -167,6 +168,13 @@ export default function StaffReview() {
                 </div>
               </div>
               {l.description && <p className="whitespace-pre-line text-sm">{l.description}</p>}
+              <PhotoStrip photos={l.photos} />
+              {hasDocuments(l, true) && (
+                <div className="grid gap-1">
+                  <p className="text-sm font-medium">Documents</p>
+                  <DocumentList kind={kind} listing={l} />
+                </div>
+              )}
               {rejecting === l.id && (
                 <div className="grid gap-2">
                   <Label htmlFor={`note-${l.id}`}>Reason for the seller</Label>
