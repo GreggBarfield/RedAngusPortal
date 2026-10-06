@@ -24,6 +24,8 @@ const config = {
   s3Bucket: process.env.S3_BUCKET_NAME || '',
   s3BaseUrl: (process.env.S3_BASE_URL || '').replace(/\/+$/, ''),
   attachDir: process.env.ATTACH_DIR || '',
+  // BlockTrust's own address, used to fetch the Local Market Insights data.
+  marketInsightsUrl: process.env.MARKET_INSIGHTS_URL || 'https://blocktrustnetwork.com',
 };
 
 module.exports = config;

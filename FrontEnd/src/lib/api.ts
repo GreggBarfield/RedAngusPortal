@@ -522,3 +522,46 @@ export async function downloadAttachment(kind: CattleKind, id: string, att: List
   a.remove()
   setTimeout(() => URL.revokeObjectURL(url), 2000)
 }
+
+// Local Market Insights (passed through to BlockTrust by our back end).
+export interface InsightMarket {
+  slug_id: string | number
+  market_name: string
+  distance_miles: number | string
+  city?: string
+  state?: string
+  report_date?: string | null
+  pricing_note?: string | null
+  ai_summary?: string | null
+  narrative?: string | null
+  steers?: InsightPriceRow[]
+  heifers?: InsightPriceRow[]
+}
+export interface InsightPriceRow {
+  weight_group: string
+  avg_price_cwt: number | string | null
+  low_price_cwt: number | string | null
+  high_price_cwt: number | string | null
+  total_head: number | string | null
+}
+export interface InsightRegion {
+  markets_found?: number | string
+  nearest_market?: string
+  nearest_market_distance_miles?: number | string
+  total_head?: number | string
+  avg_steer_price_cwt?: number | string | null
+  avg_heifer_price_cwt?: number | string | null
+}
+export interface MarketInsightsBundle {
+  markets?: InsightMarket[]
+  region?: InsightRegion
+  selected_market?: InsightMarket | null
+}
+
+export async function getMarketInsights(zip: string, radius = 200, slugId?: string | number | null): Promise<MarketInsightsBundle> {
+  let url = `/api/market-insights?zip=${encodeURIComponent(zip)}&radius=${encodeURIComponent(String(radius))}`
+  if (slugId != null && slugId !== '') url += `&slug_id=${encodeURIComponent(String(slugId))}`
+  const json = await request<{ ok: boolean; data?: MarketInsightsBundle; error?: string }>(url)
+  if (!json.ok || !json.data) throw new Error(json.error || 'Unable to load market insights.')
+  return json.data
+}

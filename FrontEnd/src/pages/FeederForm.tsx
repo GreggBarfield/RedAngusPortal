@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Check, Field, FormBanner, Section, MultiSelect, SelectField, Span, TextArea, TextField } from '@/components/form'
+import MarketInsightsButton from '@/components/MarketInsights'
 import { AuctionPicker, BreedMakeup, ContactFields, PlaceFields, PriceFields, ProductPicker } from '@/components/formParts'
 import { Input } from '@/components/ui/input'
 import { MediaSection } from '@/components/Media'
@@ -375,6 +376,9 @@ export default function FeederForm() {
         ) : null}
         <TextField id="marketingDate" label="Marketing date" type="date" value={form.marketingDate} onChange={(v) => set('marketingDate', v)} error={errors.marketingDate} />
         <PlaceFields state={form.state} zip={form.zip} errors={errors} onState={(v) => set('state', v)} onZip={(v) => set('zip', v)} />
+        <Span cols="full">
+          <MarketInsightsButton zip={form.zip} />
+        </Span>
       </Section>
 
       <Section title="Tag Information" hint="Optional. Only signed-in users see tag numbers.">

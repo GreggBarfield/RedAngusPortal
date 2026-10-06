@@ -20,6 +20,8 @@ const { createSavedFiltersRepo } = require('./savedFilters');
 const { createSavedFiltersRouter } = require('./routes/savedFilters');
 const { createMediaRepo } = require('./media');
 const { createMediaRouter } = require('./routes/media');
+const { createMarketInsights } = require('./marketInsights');
+const { createMarketInsightsRouter } = require('./routes/marketInsights');
 const { createStorage } = require('./s3');
 const { createFileStore } = require('./files');
 
@@ -41,6 +43,7 @@ function createApp({
   media = createMediaRepo(db),
   storage = createStorage({ config }),
   files = createFileStore({ config }),
+  marketInsights = createMarketInsights({ config }),
   images,
   now,
 }) {
@@ -83,6 +86,9 @@ function createApp({
   const mediaDeps = { media, storage, files, users, config, images, now };
   app.use('/api/feeder-listings/:id', createMediaRouter({ kind: 'feeder', listings: feederListings, ...mediaDeps }));
   app.use('/api/breeding-listings/:id', createMediaRouter({ kind: 'breeding', listings: breedingListings, ...mediaDeps }));
+
+  // Local Market Insights modal: passes the request to BlockTrust (read only).
+  app.use('/api/market-insights', createMarketInsightsRouter({ insights: marketInsights, now }));
 
   app.use('/api', (req, res) => {
     res.status(404).json({ error: 'not_found' });

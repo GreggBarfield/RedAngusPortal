@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { MediaSection } from '@/components/Media'
 import { Check, Field, MultiSelect, FormBanner, Section, SelectField, Span, TextArea, TextField } from '@/components/form'
+import MarketInsightsButton from '@/components/MarketInsights'
 import { AuctionPicker, ContactFields, PlaceFields, PriceFields } from '@/components/formParts'
 import { ApiError, getBreeds, getCattleListing, getEpdTraits, saveCattleListing } from '@/lib/api'
 import type { BreedingListing, EpdTrait, ListingAttachment, ListingPhoto } from '@/lib/api'
@@ -316,6 +317,9 @@ export default function BreedingForm() {
           <AuctionPicker id="auctionName" label="Auction market" name={form.auctionName} token={token} error={errors.auctionName} onPick={(name, no) => setForm((f) => ({ ...f, auctionName: name, auctionNo: no }))} />
         )}
         <PlaceFields state={form.state} zip={form.zip} errors={errors} onState={(v) => set('state', v)} onZip={(v) => set('zip', v)} />
+        <Span cols="full">
+          <MarketInsightsButton zip={form.zip} />
+        </Span>
       </Section>
 
       <Section title="Price">

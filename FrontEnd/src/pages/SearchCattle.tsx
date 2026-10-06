@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/select'
 import CattleTabs from '@/components/CattleTabs'
 import ListingPanel from '@/components/ListingPanel'
 import { CoverThumb } from '@/components/Media'
+import MarketInsightsButton from '@/components/MarketInsights'
 import { Page } from '@/components/Page'
 import SavedFilters from '@/components/SavedFilters'
 import SearchFilters from '@/components/SearchFilters'
@@ -115,7 +116,10 @@ export default function SearchCattle({ kind }: { kind: CattleKind }) {
 
   return (
     <Page>
-      <h1 className="text-3xl font-semibold tracking-tight">Search For Cattle</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-3xl font-semibold tracking-tight">Search For Cattle</h1>
+        <MarketInsightsButton zip={params.get('zip')} />
+      </div>
       <div className="mt-4">
         <CattleTabs area="search" active={kind} />
       </div>
