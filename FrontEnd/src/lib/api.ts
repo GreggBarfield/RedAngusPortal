@@ -523,6 +523,22 @@ export async function downloadAttachment(kind: CattleKind, id: string, att: List
   setTimeout(() => URL.revokeObjectURL(url), 2000)
 }
 
+// The Cattle Data Fact Sheet (a PDF the back end builds). Like the documents, it is fetched
+// with the sign-in header and then handed to the person as a download.
+export async function downloadDataSheet(id: string, token: string): Promise<void> {
+  const res = await fetch(`${BASE.feeder}/${encodeURIComponent(id)}/datasheet`, { headers: { Authorization: `Bearer ${token}` } })
+  if (!res.ok) throw new ApiError(res.status, 'request_failed')
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `RedAngus_FeederDataSheet_${id}.pdf`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 2000)
+}
+
 // Local Market Insights (passed through to BlockTrust by our back end).
 export interface InsightMarket {
   slug_id: string | number

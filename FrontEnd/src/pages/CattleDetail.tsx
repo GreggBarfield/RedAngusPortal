@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DocumentList, PhotoGallery, hasDocuments } from '@/components/Media'
 import { Page, Row } from '@/components/Page'
-import { ApiError, closeCattleListing, getCattleListing } from '@/lib/api'
+import { ApiError, closeCattleListing, downloadDataSheet, getCattleListing } from '@/lib/api'
 import type { BreedingListing, CattleKind, FeederListing } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import { BREED_CLASS_LABELS, breedText, METHOD_LABELS, SALE_TYPE_LABELS, SEX_CLASS_LABELS, STATUS_LABELS, formatDate, formatPrice, placeText } from '@/lib/cattle'
@@ -129,6 +129,8 @@ export default function CattleDetail({ kind }: { kind: CattleKind }) {
   const [notFound, setNotFound] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [sheetBusy, setSheetBusy] = useState(false)
+  const [sheetError, setSheetError] = useState('')
   const searchPath = `/search/${kind}`
 
   const load = useCallback(async () => {
@@ -158,6 +160,21 @@ export default function CattleDetail({ kind }: { kind: CattleKind }) {
       setError('Could not update the listing. Try again.')
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function getDataSheet() {
+    if (!token) return
+    setSheetBusy(true)
+    setSheetError('')
+    try {
+      await downloadDataSheet(id, token)
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 503) setSheetError('The data sheet is not available right now. Try again later.')
+      else if (err instanceof ApiError && err.status === 429) setSheetError('Too many data sheet downloads. Try again in a while.')
+      else setSheetError('Could not make the data sheet. Try again.')
+    } finally {
+      setSheetBusy(false)
     }
   }
 
@@ -207,6 +224,27 @@ export default function CattleDetail({ kind }: { kind: CattleKind }) {
             <span className="font-medium">Note from the reviewer:</span> {listing.reviewNote}
           </CardContent>
         </Card>
+      )}
+
+      {kind === 'feeder' && (
+        <div className="mt-4">
+          {user ? (
+            <Button type="button" size="sm" variant="outline" disabled={sheetBusy} onClick={() => void getDataSheet()}>
+              {sheetBusy ? 'Making data sheet...' : 'Download data sheet'}
+            </Button>
+          ) : (
+            <p className="text-sm">
+              <Link to="/login" state={{ from: `/${kind}/${listing.id}` }} className="text-primary underline">
+                Sign in to download the data sheet
+              </Link>
+            </p>
+          )}
+          {sheetError && (
+            <p role="alert" className="mt-2 text-sm text-destructive">
+              {sheetError}
+            </p>
+          )}
+        </div>
       )}
 
       {canEdit && (

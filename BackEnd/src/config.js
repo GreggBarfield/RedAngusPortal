@@ -26,6 +26,12 @@ const config = {
   attachDir: process.env.ATTACH_DIR || '',
   // BlockTrust's own address, used to fetch the Local Market Insights data.
   marketInsightsUrl: process.env.MARKET_INSIGHTS_URL || 'https://blocktrustnetwork.com',
+  // The data sheet PDF: where wkhtmltopdf is installed (BlockTrust's copy on the same
+  // server), this site's address for the QR code, and the Red Angus logo file.
+  wkhtmltopdfPath:
+    process.env.WKHTMLTOPDF_PATH || (process.platform === 'win32' ? 'C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe' : 'wkhtmltopdf'),
+  siteUrl: (process.env.SITE_URL || 'https://redangus.blocktrustnetwork.com').replace(/\/+$/, ''),
+  datasheetLogoPath: process.env.DATASHEET_LOGO_PATH || path.resolve(__dirname, '..', 'assets', 'raaa-logo.svg'),
 };
 
 module.exports = config;

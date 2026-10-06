@@ -268,10 +268,11 @@ function numberParam(v, max) {
   return Number.isInteger(n) && n >= 0 && n <= max ? n : 0;
 }
 
-function createFeederListingsRouter({ feeders, users, config, geo, now }) {
+function createFeederListingsRouter({ feeders, users, config, geo, datasheet, now }) {
   const router = express.Router();
   const { requireAuth, staffOnly, viewer, levelFor } = createAccess({ users, config });
   const createLimit = createLimiter({ max: 20, windowMs: DAY, now });
+  const sheetLimit = createLimiter({ max: 60, windowMs: 60 * 60 * 1000, now });
   const clock = () => (now ? new Date(now()) : new Date());
 
   router.get('/', viewer, async (req, res, next) => {
@@ -361,6 +362,42 @@ function createFeederListingsRouter({ feeders, users, config, geo, now }) {
       const level = levelFor(req.viewerUser, row);
       if (row.status !== 'approved' && level !== 'owner' && level !== 'staff') return res.status(404).json({ error: 'not_found' });
       return res.json({ listing: shape(row, level, clock()) });
+    } catch (err) {
+      return next(err);
+    }
+  });
+
+  // The Cattle Data Fact Sheet (PDF). Signed-in members only, because it carries the seller's
+  // phone and email. Same rule as the listing: only an approved listing is open to everyone;
+  // the owner and staff can also get the sheet of a listing that is not approved. The sheet is
+  // always built as a member sees the listing (no zip code, and a hidden group ID stays hidden).
+  router.get('/:id/datasheet', viewer, async (req, res, next) => {
+    try {
+      if (!req.viewerUser) return res.status(401).json({ error: 'unauthorized' });
+      if (!ID_RE.test(req.params.id)) return res.status(404).json({ error: 'not_found' });
+      const row = await feeders.get(req.params.id);
+      if (!row) return res.status(404).json({ error: 'not_found' });
+      const level = levelFor(req.viewerUser, row);
+      if (row.status !== 'approved' && level !== 'owner' && level !== 'staff') return res.status(404).json({ error: 'not_found' });
+      if (!datasheet || !datasheet.available()) return res.status(503).json({ error: 'datasheet_not_available' });
+      const key = String(req.viewerUser.id);
+      if (sheetLimit.isBlocked(key)) return res.status(429).json({ error: 'too_many_requests' });
+      sheetLimit.record(key);
+      let pdf;
+      try {
+        pdf = await datasheet.build(shape(row, 'member', clock()));
+      } catch (err) {
+        console.error('datasheet failed:', err.message);
+        return res.status(502).json({ error: 'datasheet_failed' });
+      }
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${datasheet.filename(row)}"`,
+        'Content-Length': String(pdf.length),
+        'X-Content-Type-Options': 'nosniff',
+        'Cache-Control': 'private, no-store',
+      });
+      return res.end(pdf);
     } catch (err) {
       return next(err);
     }

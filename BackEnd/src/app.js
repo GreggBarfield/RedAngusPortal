@@ -24,6 +24,7 @@ const { createMarketInsights } = require('./marketInsights');
 const { createMarketInsightsRouter } = require('./routes/marketInsights');
 const { createStorage } = require('./s3');
 const { createFileStore } = require('./files');
+const { createDatasheet } = require('./datasheet');
 
 // createApp takes the database helper (and optionally config and any repo) as
 // arguments so tests can pass fakes. The old feeders/listings repos serve the
@@ -44,6 +45,7 @@ function createApp({
   storage = createStorage({ config }),
   files = createFileStore({ config }),
   marketInsights = createMarketInsights({ config }),
+  datasheet = createDatasheet({ config, ref }),
   images,
   now,
 }) {
@@ -78,7 +80,7 @@ function createApp({
   const groupCounter = async (ownerId) =>
     (await feederListings.countByOwner(ownerId)) + (await breedingListings.countByOwner(ownerId));
   app.use('/api/ref', createRefRouter({ ref, users, config, groupCounter, now }));
-  app.use('/api/feeder-listings', createFeederListingsRouter({ feeders: feederListings, users, config, geo, now }));
+  app.use('/api/feeder-listings', createFeederListingsRouter({ feeders: feederListings, users, config, geo, datasheet, now }));
   app.use('/api/breeding-listings', createBreedingListingsRouter({ breeding: breedingListings, users, config, geo, now }));
   app.use('/api/saved-filters', createSavedFiltersRouter({ filters: savedFilters, users, config }));
 
