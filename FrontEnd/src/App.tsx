@@ -4,6 +4,9 @@ import RequireAuth from '@/components/RequireAuth'
 import { AuthProvider } from '@/lib/auth'
 import Account from '@/pages/Account'
 import BarnDetail from '@/pages/BarnDetail'
+import Feedlots from '@/pages/Feedlots'
+import FeedlotDetail from '@/pages/FeedlotDetail'
+import FeedlotNew from '@/pages/FeedlotNew'
 import Barns from '@/pages/Barns'
 import CattleDetail from '@/pages/CattleDetail'
 import Home from '@/pages/Home'
@@ -23,6 +26,8 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/barns" element={<Barns />} />
           <Route path="/barns/:id" element={<BarnDetail />} />
+          <Route path="/feedlots" element={<Feedlots />} />
+          <Route path="/feedlots/:id" element={<FeedlotDetail />} />
           <Route path="/search" element={<Navigate to="/search/feeder" replace />} />
           <Route path="/search/feeder" element={<SearchCattle kind="feeder" />} />
           <Route path="/search/breeding" element={<SearchCattle kind="breeding" />} />
@@ -39,6 +44,7 @@ export default function App() {
             <Route path="/list/breeding/:id/edit" element={<ListCattle kind="breeding" />} />
             <Route path="/my-listings" element={<MyListings />} />
             <Route path="/staff/review" element={<StaffReview />} />
+            <Route path="/feedlots/new" element={<FeedlotNew />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Route>

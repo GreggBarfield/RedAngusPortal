@@ -25,6 +25,8 @@ const { createMarketInsightsRouter } = require('./routes/marketInsights');
 const { createStorage } = require('./s3');
 const { createFileStore } = require('./files');
 const { createDatasheet } = require('./datasheet');
+const { createFeedlotsRepo } = require('./feedlots');
+const { createFeedlotsRouter } = require('./routes/feedlots');
 
 // createApp takes the database helper (and optionally config and any repo) as
 // arguments so tests can pass fakes. The old feeders/listings repos serve the
@@ -46,6 +48,7 @@ function createApp({
   files = createFileStore({ config }),
   marketInsights = createMarketInsights({ config }),
   datasheet = createDatasheet({ config, ref }),
+  feedlots = createFeedlotsRepo(db),
   images,
   now,
 }) {
@@ -88,6 +91,9 @@ function createApp({
   const mediaDeps = { media, storage, files, users, config, images, now };
   app.use('/api/feeder-listings/:id', createMediaRouter({ kind: 'feeder', listings: feederListings, ...mediaDeps }));
   app.use('/api/breeding-listings/:id', createMediaRouter({ kind: 'breeding', listings: breedingListings, ...mediaDeps }));
+
+  // The feedlot directory (staff add and edit; showlists are sent from here in a later release).
+  app.use('/api/feedlots', createFeedlotsRouter({ feedlots, users, config }));
 
   // Local Market Insights modal: passes the request to BlockTrust (read only).
   app.use('/api/market-insights', createMarketInsightsRouter({ insights: marketInsights, now }));

@@ -104,6 +104,7 @@ export default function Layout() {
               <Menu label={pending > 0 ? `Staff Tools (${pending})` : 'Staff Tools'}>
                 <MenuLink to="/staff/review">Review listings{pending > 0 ? ` (${pending})` : ''}</MenuLink>
                 <MenuLink to="/barns">Sale barns</MenuLink>
+                <MenuLink to="/feedlots">Feedlots</MenuLink>
               </Menu>
             )}
             {loading ? null : user ? (
@@ -141,9 +142,14 @@ export default function Layout() {
       <footer className="border-t bg-card">
         <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-2 px-4 py-4 text-sm text-muted-foreground sm:px-6">
           <span>Red Angus Association Marketing Portal</span>
-          <Link to="/barns" className="hover:text-foreground hover:underline">
-            Sale barns
-          </Link>
+          <span className="flex gap-4">
+            <Link to="/barns" className="hover:text-foreground hover:underline">
+              Sale barns
+            </Link>
+            <Link to="/feedlots" className="hover:text-foreground hover:underline">
+              Feedlots
+            </Link>
+          </span>
         </div>
       </footer>
     </div>

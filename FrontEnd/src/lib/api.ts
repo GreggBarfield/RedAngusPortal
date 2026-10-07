@@ -581,3 +581,127 @@ export async function getMarketInsights(zip: string, radius = 200, slugId?: stri
   if (!json.ok || !json.data) throw new Error(json.error || 'Unable to load market insights.')
   return json.data
 }
+
+// ---------------------------------------------------------------------------
+// Feedlot directory
+// ---------------------------------------------------------------------------
+
+export interface Feedlot {
+  id: number
+  name: string
+  city: string | null
+  state: string
+  website: string | null
+  // Only present when signed in:
+  address?: string | null
+  zip?: string | null
+  contactName?: string | null
+  phone?: string | null
+  emails?: string[]
+  fax?: string | null
+  // Only present for staff:
+  notes?: string | null
+  enabled?: boolean
+  doNotEmail?: boolean
+  doNotEmailAt?: string | null
+  doNotEmailNote?: string | null
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface FeedlotList {
+  total: number
+  page: number
+  pageSize: number
+  feedlots: Feedlot[]
+}
+
+export interface FeedlotQuery {
+  q?: string
+  state?: string
+  hasEmail?: '' | '1' | '0'
+  // staff: '' = all, 'active', 'retired', 'dnm' (do not email)
+  show?: '' | 'active' | 'retired' | 'dnm'
+  page?: number
+}
+
+export function listFeedlots(query: FeedlotQuery, token?: string | null): Promise<FeedlotList> {
+  const p = new URLSearchParams()
+  if (query.q) p.set('q', query.q)
+  if (query.state) p.set('state', query.state)
+  if (query.hasEmail) p.set('hasEmail', query.hasEmail)
+  if (query.show === 'active') p.set('enabled', '1')
+  if (query.show === 'retired') p.set('enabled', '0')
+  if (query.show === 'dnm') p.set('doNotEmail', '1')
+  if (query.page && query.page > 1) p.set('page', String(query.page))
+  const qs = p.toString()
+  return request<FeedlotList>('/api/feedlots' + (qs ? '?' + qs : ''), {}, token)
+}
+
+export function getFeedlotStates(token?: string | null): Promise<{ states: { state: string; n: number }[] }> {
+  return request('/api/feedlots/states', {}, token)
+}
+
+export interface FeedlotStats {
+  total: number
+  enabled: number
+  withEmail: number
+  canEmail: number
+  doNotEmail: number
+  withFax: number
+}
+
+export function getFeedlotStats(token: string): Promise<{ stats: FeedlotStats }> {
+  return request('/api/feedlots/stats', {}, token)
+}
+
+export function getFeedlot(id: number, token?: string | null): Promise<{ feedlot: Feedlot }> {
+  return request<{ feedlot: Feedlot }>('/api/feedlots/' + id, {}, token)
+}
+
+// What the form sends. Emails go as the text typed (the server splits and checks it).
+export interface FeedlotInput {
+  name?: string
+  contactName?: string | null
+  address?: string | null
+  city?: string | null
+  state?: string
+  zip?: string | null
+  phone?: string | null
+  emails?: string
+  fax?: string | null
+  website?: string | null
+  notes?: string | null
+  enabled?: boolean
+  doNotEmail?: boolean
+  doNotEmailNote?: string | null
+}
+
+export function createFeedlot(input: FeedlotInput, token: string): Promise<{ feedlot: Feedlot }> {
+  return request<{ feedlot: Feedlot }>('/api/feedlots', { method: 'POST', body: JSON.stringify(input) }, token)
+}
+
+export function updateFeedlot(
+  id: number,
+  changes: FeedlotInput,
+  token: string,
+): Promise<{ feedlot: Feedlot; changed: { field: string; oldValue: string | null; newValue: string | null }[] }> {
+  return request('/api/feedlots/' + id, { method: 'PATCH', body: JSON.stringify({ changes }) }, token)
+}
+
+export function deleteFeedlot(id: number, token: string): Promise<{ removed: boolean }> {
+  return request('/api/feedlots/' + id, { method: 'DELETE' }, token)
+}
+
+export interface FeedlotLogEntry {
+  id: string
+  field: string
+  oldValue: string | null
+  newValue: string | null
+  changedAt: string
+  changedBy: string
+}
+
+export function getFeedlotLog(id: number, token: string): Promise<{ log: FeedlotLogEntry[] }> {
+  return request<{ log: FeedlotLogEntry[] }>('/api/feedlots/' + id + '/log', {}, token)
+}
