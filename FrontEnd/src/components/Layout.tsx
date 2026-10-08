@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+﻿import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { ChevronDown } from 'lucide-react'
@@ -86,7 +86,7 @@ export default function Layout() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="border-b bg-card">
+      <header className="border-b border-black/10 bg-[#c1af93]">
         <div className="mx-auto flex min-h-14 w-full max-w-[1600px] flex-wrap items-center justify-between gap-2 px-4 sm:px-6">
           <div className="flex flex-wrap items-center gap-1">
             <Link to="/" className="mr-4 font-semibold tracking-tight">
@@ -155,3 +155,4 @@ export default function Layout() {
     </div>
   )
 }
+

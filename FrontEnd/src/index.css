@@ -24,21 +24,21 @@
 
 :root {
   --background: oklch(0.99 0.004 80);
-  --foreground: oklch(0.22 0.02 40);
+  --foreground: #1a2133;
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.02 40);
-  --primary: oklch(0.45 0.16 28);
-  --primary-foreground: oklch(0.98 0.01 80);
-  --secondary: oklch(0.95 0.012 70);
-  --secondary-foreground: oklch(0.3 0.03 40);
+  --card-foreground: #1a2133;
+  --primary: #651414;
+  --primary-foreground: #fbf8f2;
+  --secondary: #f1ece2;
+  --secondary-foreground: #1a2133;
   --muted: oklch(0.96 0.008 70);
   --muted-foreground: oklch(0.5 0.02 50);
-  --accent: oklch(0.93 0.03 40);
-  --accent-foreground: oklch(0.3 0.06 30);
+  --accent: #e7dfd0;
+  --accent-foreground: #651414;
   --destructive: oklch(0.55 0.2 27);
   --border: oklch(0.9 0.012 70);
   --input: oklch(0.9 0.012 70);
-  --ring: oklch(0.45 0.16 28);
+  --ring: #651414;
 }
 
 * {
@@ -50,3 +50,4 @@ body {
   color: var(--foreground);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
+

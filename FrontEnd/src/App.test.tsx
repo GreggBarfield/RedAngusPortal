@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+﻿import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
@@ -20,7 +20,7 @@ describe('Home page and menu', () => {
   it('shows the title and the two main choices', () => {
     vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})))
     renderApp()
-    expect(screen.getByRole('heading', { name: 'Red Angus Marketing Portal' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Cattle Marketing Portal' })).toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: /search for cattle/i }).length).toBeGreaterThan(0)
     const menu = screen.getAllByRole('link', { name: /list your cattle/i })
     expect(menu.length).toBeGreaterThan(0)
@@ -43,3 +43,4 @@ describe('Home page and menu', () => {
     expect(screen.queryByRole('button', { name: /staff tools/i })).toBeNull()
   })
 })
+
