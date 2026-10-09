@@ -16,7 +16,7 @@ export default function Home() {
           <img src="/red-angus-logo.svg" alt="Red Angus Association" className="h-20 w-auto sm:h-28" />
           <PageHeadingTitle>Cattle Marketing Portal</PageHeadingTitle>
           <PageHeadingBody className="text-[#1a2133]/80">
-            Search and list Red Angus cattle. Breeding bulls and females, feeder cattle, semen and embryos, all in one place.
+            Search and list Red Angus breeding and feeder cattle. Data points on every listing help serious cattle buyers make better purchasing decisions.
           </PageHeadingBody>
           <PageHeadingActions>
             <Button asChild size="lg">
@@ -43,3 +43,4 @@ export default function Home() {
     </section>
   )
 }
+
