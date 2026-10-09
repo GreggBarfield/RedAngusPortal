@@ -7,6 +7,10 @@ import BarnDetail from '@/pages/BarnDetail'
 import Feedlots from '@/pages/Feedlots'
 import FeedlotDetail from '@/pages/FeedlotDetail'
 import FeedlotNew from '@/pages/FeedlotNew'
+import ShowlistNew from '@/pages/ShowlistNew'
+import Showlists from '@/pages/Showlists'
+import ShowlistDetail from '@/pages/ShowlistDetail'
+import Unsubscribe from '@/pages/Unsubscribe'
 import Barns from '@/pages/Barns'
 import CattleDetail from '@/pages/CattleDetail'
 import Home from '@/pages/Home'
@@ -28,6 +32,7 @@ export default function App() {
           <Route path="/barns/:id" element={<BarnDetail />} />
           <Route path="/feedlots" element={<Feedlots />} />
           <Route path="/feedlots/:id" element={<FeedlotDetail />} />
+          <Route path="/unsubscribe/:token" element={<Unsubscribe />} />
           <Route path="/search" element={<Navigate to="/search/feeder" replace />} />
           <Route path="/search/feeder" element={<SearchCattle kind="feeder" />} />
           <Route path="/search/breeding" element={<SearchCattle kind="breeding" />} />
@@ -45,6 +50,9 @@ export default function App() {
             <Route path="/my-listings" element={<MyListings />} />
             <Route path="/staff/review" element={<StaffReview />} />
             <Route path="/feedlots/new" element={<FeedlotNew />} />
+            <Route path="/staff/showlists" element={<Showlists />} />
+            <Route path="/staff/showlists/new" element={<ShowlistNew />} />
+            <Route path="/staff/showlists/:id" element={<ShowlistDetail />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Route>

@@ -705,3 +705,165 @@ export interface FeedlotLogEntry {
 export function getFeedlotLog(id: number, token: string): Promise<{ log: FeedlotLogEntry[] }> {
   return request<{ log: FeedlotLogEntry[] }>('/api/feedlots/' + id + '/log', {}, token)
 }
+
+// ---------------------------------------------------------------------------
+// Showlist emails to feedlots (staff) and the unsubscribe page (public)
+// ---------------------------------------------------------------------------
+
+export interface ShowlistLot {
+  id: number
+  headline: string
+  steerCount: number
+  heiferCount: number
+  headCount: number
+  avgWeightSteers: number | null
+  avgWeightHeifers: number | null
+  avgWeight: number | null
+  marketingMethod: string
+  auctionName: string | null
+  marketingDate: string
+  city: string | null
+  state: string
+  priceBasis: string | null
+  askingPrice: number | null
+  callForPrice: boolean
+  contactName: string
+  contactPhone: string
+  contactEmail: string
+  breeds: string[]
+}
+
+export interface ShowlistStatus {
+  configured: boolean
+  missing: string[]
+  from: string
+  replyTo: string
+  sending: boolean
+}
+
+export interface ShowlistRecipient {
+  id: number
+  name: string
+  city: string | null
+  state: string
+  emails: string[]
+  lastSent: string | null
+}
+
+export interface ShowlistCompose {
+  subject: string
+  intro: string
+  lotIds: number[]
+}
+
+export interface ShowlistCounts {
+  QUEUED: number
+  SENDING: number
+  SUBMITTED: number
+  DELIVERED: number
+  FAILED: number
+  SUBMIT_FAILED: number
+}
+
+export interface ShowlistSummary {
+  id: number
+  subject: string
+  recipientCount: number
+  lotCount: number
+  createdAt: string
+  createdBy: string
+  counts: ShowlistCounts
+}
+
+export interface ShowlistSend {
+  id: number
+  feedlotId: number
+  feedlotName: string
+  recipient: string
+  status: keyof ShowlistCounts
+  detail: string | null
+  submittedAt: string | null
+  deliveredAt: string | null
+  failedAt: string | null
+  unsubscribedAt: string | null
+}
+
+export interface ShowlistDetail {
+  showlist: {
+    id: number
+    subject: string
+    intro: string | null
+    recipientCount: number
+    createdAt: string
+    createdBy: string
+    lots: { id: number; headline: string }[]
+  }
+  counts: ShowlistCounts
+  active: boolean
+  sends: ShowlistSend[]
+}
+
+// Like request(), but keeps the plain-words message the server sends with some errors.
+async function showlistPost<T>(path: string, body: unknown, token: string): Promise<T> {
+  const res = await fetch(path, {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body ?? {}),
+  })
+  let data: { error?: string; message?: string; fields?: Record<string, string> } | null = null
+  try {
+    data = await res.json()
+  } catch {
+    data = null
+  }
+  if (!res.ok) {
+    const err = new ApiError(res.status, data?.error ?? 'request_failed', data?.fields ?? {}) as ApiError & { serverMessage?: string }
+    err.serverMessage = data?.message
+    throw err
+  }
+  return data as T
+}
+
+export function getShowlistStatus(token: string): Promise<ShowlistStatus> {
+  return request('/api/showlists/status', {}, token)
+}
+
+export function getShowlistLots(token: string): Promise<{ lots: ShowlistLot[] }> {
+  return request('/api/showlists/lots', {}, token)
+}
+
+export function getShowlistRecipients(token: string): Promise<{ blocked: number; feedlots: ShowlistRecipient[] }> {
+  return request('/api/showlists/recipients', {}, token)
+}
+
+export function previewShowlist(input: ShowlistCompose, token: string): Promise<{ subject: string; html: string; text: string }> {
+  return showlistPost('/api/showlists/preview', input, token)
+}
+
+export function testShowlist(input: ShowlistCompose & { to: string }, token: string): Promise<{ sent: boolean; to: string }> {
+  return showlistPost('/api/showlists/test', input, token)
+}
+
+export function sendShowlist(input: ShowlistCompose & { feedlotIds: number[] }, token: string): Promise<{ showlist: { id: number; recipientCount: number } }> {
+  return showlistPost('/api/showlists', input, token)
+}
+
+export function listShowlists(token: string): Promise<{ showlists: ShowlistSummary[]; sending: boolean }> {
+  return request('/api/showlists', {}, token)
+}
+
+export function getShowlist(id: number | string, token: string): Promise<ShowlistDetail> {
+  return request(`/api/showlists/${id}`, {}, token)
+}
+
+export function resumeShowlist(id: number | string, token: string): Promise<{ resumed: boolean; waiting: number }> {
+  return showlistPost(`/api/showlists/${id}/resume`, {}, token)
+}
+
+export function getUnsubscribe(unsubToken: string): Promise<{ feedlotName: string; alreadyOff: boolean }> {
+  return request(`/api/unsubscribe/${encodeURIComponent(unsubToken)}`)
+}
+
+export function postUnsubscribe(unsubToken: string): Promise<{ done: boolean; feedlotName: string }> {
+  return request(`/api/unsubscribe/${encodeURIComponent(unsubToken)}`, { method: 'POST', body: '{}' })
+}

@@ -105,6 +105,7 @@ export default function Layout() {
                 <MenuLink to="/staff/review">Review listings{pending > 0 ? ` (${pending})` : ''}</MenuLink>
                 <MenuLink to="/barns">Sale barns</MenuLink>
                 <MenuLink to="/feedlots">Feedlots</MenuLink>
+                <MenuLink to="/staff/showlists">Showlists</MenuLink>
               </Menu>
             )}
             {loading ? null : user ? (
