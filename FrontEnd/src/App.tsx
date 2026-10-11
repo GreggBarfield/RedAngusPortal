@@ -21,6 +21,7 @@ import NotFound from '@/pages/NotFound'
 import Register from '@/pages/Register'
 import SearchCattle from '@/pages/SearchCattle'
 import StaffReview from '@/pages/StaffReview'
+import StaffDashboard from '@/pages/StaffDashboard'
 
 export default function App() {
   return (
@@ -48,6 +49,7 @@ export default function App() {
             <Route path="/list/feeder/:id/edit" element={<ListCattle kind="feeder" />} />
             <Route path="/list/breeding/:id/edit" element={<ListCattle kind="breeding" />} />
             <Route path="/my-listings" element={<MyListings />} />
+            <Route path="/staff/dashboard" element={<StaffDashboard />} />
             <Route path="/staff/review" element={<StaffReview />} />
             <Route path="/feedlots/new" element={<FeedlotNew />} />
             <Route path="/staff/showlists" element={<Showlists />} />

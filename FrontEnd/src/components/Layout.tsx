@@ -102,6 +102,7 @@ export default function Layout() {
           <nav className="flex items-center gap-1" aria-label="Account">
             {isStaff && (
               <Menu label={pending > 0 ? `Staff Tools (${pending})` : 'Staff Tools'}>
+                <MenuLink to="/staff/dashboard">Dashboard</MenuLink>
                 <MenuLink to="/staff/review">Review listings{pending > 0 ? ` (${pending})` : ''}</MenuLink>
                 <MenuLink to="/barns">Sale barns</MenuLink>
                 <MenuLink to="/feedlots">Feedlots</MenuLink>

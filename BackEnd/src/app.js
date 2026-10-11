@@ -29,6 +29,8 @@ const { createFeedlotsRepo } = require('./feedlots');
 const { createFeedlotsRouter } = require('./routes/feedlots');
 const { createShowlist } = require('./showlistModule');
 const { createAiDescription } = require('./aiDescription');
+const { createDashboardRepo } = require('./dashboard');
+const { createDashboardRouter } = require('./routes/dashboard');
 
 // createApp takes the database helper (and optionally config and any repo) as
 // arguments so tests can pass fakes. The old feeders/listings repos serve the
@@ -53,6 +55,7 @@ function createApp({
   feedlots = createFeedlotsRepo(db),
   showlist = createShowlist({ db, config, users }),
   ai = createAiDescription({ config, btn }),
+  dashboard = createDashboardRepo({ db, btn }),
   images,
   now,
 }) {
@@ -102,6 +105,9 @@ function createApp({
   // Showlist emails to feedlots (staff only), the unsubscribe link and SMTP2GO's delivery reports.
   app.use('/api/showlists', showlist.staffRouter);
   app.use('/api', showlist.publicRouter);
+
+  // Staff dashboard numbers (read only, staff only).
+  app.use('/api/dashboard', createDashboardRouter({ dashboard, users, config }));
 
   // Local Market Insights modal: passes the request to BlockTrust (read only).
   app.use('/api/market-insights', createMarketInsightsRouter({ insights: marketInsights, now }));
