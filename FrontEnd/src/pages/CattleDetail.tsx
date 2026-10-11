@@ -9,7 +9,7 @@ import { Page, Row } from '@/components/Page'
 import { ApiError, closeCattleListing, downloadDataSheet, getCattleListing } from '@/lib/api'
 import type { BreedingListing, CattleKind, FeederListing } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
-import { BREED_CLASS_LABELS, breedText, METHOD_LABELS, SALE_TYPE_LABELS, SEX_CLASS_LABELS, STATUS_LABELS, formatDate, formatPrice, placeText } from '@/lib/cattle'
+import { BREED_CLASS_LABELS, breedText, METHOD_LABELS, SALE_TYPE_LABELS, SEX_CLASS_LABELS, STATUS_LABELS, formatDate, formatPrice, listingNotes, placeText } from '@/lib/cattle'
 
 function Block({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -46,6 +46,11 @@ function FeederBody({ l }: { l: FeederListing }) {
         </dl>
         {l.description && <p className="mt-2 whitespace-pre-line text-sm">{l.description}</p>}
       </Block>
+      {listingNotes(l) && (
+        <Block title="Listing Notes">
+          <p className="whitespace-pre-line text-sm">{listingNotes(l)}</p>
+        </Block>
+      )}
       {l.vaccinations.length > 0 && (
         <Block title="Vaccinations / Medications">
           <ul className="grid gap-1 text-sm">

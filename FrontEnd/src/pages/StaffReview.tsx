@@ -9,7 +9,7 @@ import { Page } from '@/components/Page'
 import { ApiError, getCattleQueue, reviewCattleListing } from '@/lib/api'
 import type { BreedingListing, CattleKind, FeederListing } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
-import { METHOD_LABELS, SALE_TYPE_LABELS, SEX_CLASS_LABELS, formatDate, formatPrice, placeText } from '@/lib/cattle'
+import { METHOD_LABELS, SALE_TYPE_LABELS, SEX_CLASS_LABELS, formatDate, formatPrice, listingNotes, placeText } from '@/lib/cattle'
 import { cn } from '@/lib/utils'
 
 type Status = 'pending' | 'approved' | 'rejected'
@@ -168,6 +168,12 @@ export default function StaffReview() {
                 </div>
               </div>
               {l.description && <p className="whitespace-pre-line text-sm">{l.description}</p>}
+              {listingNotes(l) && (
+                <div className="grid gap-1">
+                  <p className="text-sm font-medium">Listing Notes</p>
+                  <p className="whitespace-pre-line text-sm">{listingNotes(l)}</p>
+                </div>
+              )}
               <PhotoStrip photos={l.photos} />
               {hasDocuments(l, true) && (
                 <div className="grid gap-1">

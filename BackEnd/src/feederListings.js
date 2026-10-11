@@ -4,7 +4,7 @@ const { attachMedia } = require('./media');
 
 const COLUMNS = `f.id, f.owner_id, f.group_id, f.group_id_optout, f.breed_mode, f.headline, f.steer_count, f.heifer_count,
   f.head_count, f.avg_weight_steers, f.avg_weight_heifers, f.avg_weight, f.birth_date::text AS birth_date,
-  f.wean_date::text AS wean_date, f.vet_name, f.birth_country, f.description, f.nutrition, f.marketing_method,
+  f.wean_date::text AS wean_date, f.vet_name, f.birth_country, f.description, f.nutrition, f.include_ai, f.ai_description, f.marketing_method,
   f.auction_no, f.auction_name, f.marketing_date::text AS marketing_date, f.tag_visual_start, f.tag_visual_end,
   f.tag_eid_start, f.tag_eid_end, f.city, f.state, f.zip, f.lat::float8 AS lat, f.lon::float8 AS lon,
   f.price_basis, f.asking_price::float8 AS asking_price, f.call_for_price, f.contact_name, f.contact_phone,
@@ -30,6 +30,8 @@ const FIELDS = [
   ['birthCountry', 'birth_country'],
   ['description', 'description'],
   ['nutrition', 'nutrition'],
+  ['includeAi', 'include_ai'],
+  ['aiDescription', 'ai_description'],
   ['marketingMethod', 'marketing_method'],
   ['auctionNo', 'auction_no'],
   ['auctionName', 'auction_name'],

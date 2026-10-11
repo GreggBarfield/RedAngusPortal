@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { DocumentList, PhotoGallery, hasDocuments } from '@/components/Media'
 import { Row } from '@/components/Page'
 import type { BreedingListing, CattleKind, FeederListing } from '@/lib/api'
-import { BREED_CLASS_LABELS, breedText, METHOD_LABELS, SALE_TYPE_LABELS, SEX_CLASS_LABELS, formatDate, formatPrice, placeText } from '@/lib/cattle'
+import { BREED_CLASS_LABELS, breedText, METHOD_LABELS, SALE_TYPE_LABELS, SEX_CLASS_LABELS, formatDate, formatPrice, listingNotes, placeText } from '@/lib/cattle'
 
 type Any = FeederListing | BreedingListing
 
@@ -31,6 +31,12 @@ function FeederFacts({ l }: { l: FeederListing }) {
         <Row label="Preconditioning" value={l.preconditioning.join(', ')} />
         <Row label="Special programs" value={l.special.join(', ')} />
       </Group>
+      {listingNotes(l) && (
+        <section className="border-t pt-3">
+          <h3 className="mb-2 text-sm font-semibold">Listing Notes</h3>
+          <p className="whitespace-pre-line text-sm">{listingNotes(l)}</p>
+        </section>
+      )}
       <Group title="Marketing Information">
         <Row label="Method" value={METHOD_LABELS[l.marketingMethod]} />
         <Row label="Auction market" value={l.auctionName} />

@@ -26,6 +26,9 @@ const config = {
   attachDir: process.env.ATTACH_DIR || '',
   // BlockTrust's own address, used to fetch the Local Market Insights data.
   marketInsightsUrl: process.env.MARKET_INSIGHTS_URL || 'https://blocktrustnetwork.com',
+  // Listing notes written by Claude. The key goes only in the server's .env file.
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
+  anthropicModel: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6',
   // The data sheet PDF: where wkhtmltopdf is installed (BlockTrust's copy on the same
   // server), this site's address for the QR code, and the Red Angus logo file.
   wkhtmltopdfPath:

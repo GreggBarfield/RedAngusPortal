@@ -113,6 +113,10 @@ function validateFeederListing(body, now = new Date()) {
   c.names('special', { min: 0, max: 10, itemMax: 100, label: 'a program' });
   c.opt('description', 4000);
   c.opt('nutrition', 2000);
+  // Listing notes (written with AI, then read and changed by the seller). Included only when ticked and not empty.
+  c.opt('aiDescription', 2000);
+  if (v.aiDescription) v.aiDescription = v.aiDescription.replace(/\r\n?/g, '\n');
+  v.includeAi = b.includeAi === true && Boolean(v.aiDescription);
 
   // Vaccination / medication rows: blank rows are dropped.
   if (b.vaccinations != null && !Array.isArray(b.vaccinations)) {
@@ -217,6 +221,7 @@ function shape(row, level, now = new Date()) {
     birthCountry: row.birth_country,
     description: row.description,
     nutrition: row.nutrition,
+    aiDescription: row.include_ai || owner ? row.ai_description || null : null,
     breeds: row.breeds || [],
     breedMode: row.breed_mode || null,
     breedDetails: (row.breeds || []).map((name, i) => ({ name, amount: row.breed_amounts && row.breed_amounts[i] != null ? row.breed_amounts[i] : null })),
@@ -252,6 +257,7 @@ function shape(row, level, now = new Date()) {
   out.mine = level === 'owner';
   if (owner) {
     out.groupIdOptout = row.group_id_optout;
+    out.includeAi = row.include_ai === true;
     out.zip = row.zip;
     out.reviewNote = row.review_note;
     out.updatedAt = row.updated_at;
@@ -268,11 +274,12 @@ function numberParam(v, max) {
   return Number.isInteger(n) && n >= 0 && n <= max ? n : 0;
 }
 
-function createFeederListingsRouter({ feeders, users, config, geo, datasheet, now }) {
+function createFeederListingsRouter({ feeders, users, config, geo, datasheet, ai, now }) {
   const router = express.Router();
   const { requireAuth, staffOnly, viewer, levelFor } = createAccess({ users, config });
   const createLimit = createLimiter({ max: 20, windowMs: DAY, now });
   const sheetLimit = createLimiter({ max: 60, windowMs: 60 * 60 * 1000, now });
+  const aiLimit = createLimiter({ max: 30, windowMs: DAY, now });
   const clock = () => (now ? new Date(now()) : new Date());
 
   router.get('/', viewer, async (req, res, next) => {
@@ -349,6 +356,30 @@ function createFeederListingsRouter({ feeders, users, config, geo, datasheet, no
       createLimit.record(String(req.user.id));
       const row = await feeders.create(req.user.id, values);
       return res.status(201).json({ listing: shape(row, 'owner', clock()) });
+    } catch (err) {
+      return next(err);
+    }
+  });
+
+  // Writes listing notes from what is on the form (it may be only partly filled in).
+  // Signed-in users only; 30 a day each. Nothing is saved here: the seller reads the text,
+  // can change it, and it is saved with the listing.
+  router.post('/ai-description', requireAuth, async (req, res, next) => {
+    try {
+      if (!ai || !ai.available()) return res.status(503).json({ error: 'ai_not_available' });
+      const key = String(req.user.id);
+      if (aiLimit.isBlocked(key)) return res.status(429).json({ error: 'too_many_requests' });
+      const { values, errors } = ai.readInput(req.body, clock());
+      if (errors) return res.status(400).json({ error: 'validation', fields: errors });
+      aiLimit.record(key);
+      let result;
+      try {
+        result = await ai.generate(values, clock());
+      } catch (err) {
+        console.error('ai description failed:', err.message);
+        return res.status(502).json({ error: 'ai_failed' });
+      }
+      return res.json({ text: result.text });
     } catch (err) {
       return next(err);
     }

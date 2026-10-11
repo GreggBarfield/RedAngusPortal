@@ -293,6 +293,8 @@ export interface FeederListing extends ListingCommon {
   vetName: string | null
   birthCountry: string
   nutrition: string | null
+  aiDescription?: string | null
+  includeAi?: boolean
   breeds: string[]
   breedMode: 'percent' | 'head' | null
   breedDetails: { name: string; amount: number | null }[]
@@ -370,6 +372,11 @@ export function getMyCattleListings<T>(kind: CattleKind, token: string): Promise
 export function saveCattleListing<T>(kind: CattleKind, id: string | null, input: ListingInput, token: string): Promise<{ listing: T }> {
   const url = id ? `${BASE[kind]}/${encodeURIComponent(id)}` : BASE[kind]
   return request<{ listing: T }>(url, { method: id ? 'PUT' : 'POST', body: JSON.stringify(input) }, token)
+}
+
+// Asks the server to write the Listing Notes text from the form values. Nothing is saved.
+export function writeListingNotes(input: ListingInput, token: string): Promise<{ text: string }> {
+  return request<{ text: string }>(`${BASE.feeder}/ai-description`, { method: 'POST', body: JSON.stringify(input) }, token)
 }
 
 export function closeCattleListing(kind: CattleKind, id: string, status: 'sold' | 'withdrawn', token: string): Promise<{ ok: boolean }> {

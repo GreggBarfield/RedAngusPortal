@@ -7,7 +7,7 @@ import MarketInsightsButton from '@/components/MarketInsights'
 import { AuctionPicker, BreedMakeup, ContactFields, PlaceFields, PriceFields, ProductPicker } from '@/components/formParts'
 import { Input } from '@/components/ui/input'
 import { MediaSection } from '@/components/Media'
-import { ApiError, getBreeds, getCattleListing, getCountries, getGroupId, getPrograms, saveCattleListing } from '@/lib/api'
+import { ApiError, getBreeds, getCattleListing, getCountries, getGroupId, getPrograms, saveCattleListing, writeListingNotes } from '@/lib/api'
 import type { FeederListing, ListingAttachment, ListingPhoto } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import { METHOD_LABELS } from '@/lib/cattle'
@@ -37,6 +37,8 @@ interface Form {
   special: string[]
   description: string
   nutrition: string
+  includeAi: boolean
+  aiDescription: string
   vaccinations: Row[]
   marketingMethod: string
   auctionName: string
@@ -80,6 +82,8 @@ function blankForm(name: string, email: string): Form {
     special: [],
     description: '',
     nutrition: '',
+    includeAi: false,
+    aiDescription: '',
     vaccinations: [blankRow()],
     marketingMethod: '',
     auctionName: '',
@@ -119,6 +123,8 @@ function fromListing(l: FeederListing): Form {
     special: l.special,
     description: s(l.description),
     nutrition: s(l.nutrition),
+    includeAi: l.includeAi === true,
+    aiDescription: s(l.aiDescription),
     vaccinations: l.vaccinations.length ? l.vaccinations.map((v) => ({ key: rowKey++, date: s(v.date).slice(0, 10), product: v.product })) : [blankRow()],
     marketingMethod: l.marketingMethod,
     auctionName: s(l.auctionName),
@@ -159,6 +165,8 @@ function toPayload(f: Form) {
     special: f.special,
     description: f.description,
     nutrition: f.nutrition,
+    includeAi: f.includeAi,
+    aiDescription: f.aiDescription,
     vaccinations: f.vaccinations.map((v) => ({ date: v.date, product: v.product })),
     marketingMethod: f.marketingMethod,
     auctionName: auction ? f.auctionName : '',
@@ -197,6 +205,8 @@ export default function FeederForm() {
   const [draft, setDraft] = useState(emptyDraft)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
+  const [aiBusy, setAiBusy] = useState(false)
+  const [aiMessage, setAiMessage] = useState('')
   const bannerRef = useRef<HTMLDivElement>(null)
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) => setForm((f) => ({ ...f, [key]: value }))
@@ -278,6 +288,24 @@ export default function FeederForm() {
       setTimeout(() => bannerRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' }), 0)
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function writeNotes() {
+    if (!token) return
+    setAiBusy(true)
+    setAiMessage('')
+    try {
+      const r = await writeListingNotes(toPayload(form), token)
+      setForm((f) => ({ ...f, aiDescription: r.text, includeAi: true }))
+    } catch (err) {
+      const status = err instanceof ApiError ? err.status : 0
+      if (status === 400) setAiMessage('Fill in the number of steers and heifers and at least one breed first, then try again.')
+      else if (status === 503) setAiMessage('Writing the notes is not available right now. You can type your own below.')
+      else if (status === 429) setAiMessage("Today's limit for writing notes has been used. You can type your own below.")
+      else setAiMessage('The notes could not be written. Try again, or type your own below.')
+    } finally {
+      setAiBusy(false)
     }
   }
 
@@ -386,6 +414,33 @@ export default function FeederForm() {
         <TextField id="tagVisualEnd" label="Visual tag - last number" value={form.tagVisualEnd} onChange={(v) => set('tagVisualEnd', v)} error={errors.tagVisualEnd} />
         <TextField id="tagEidStart" label="EID tag - first number" value={form.tagEidStart} onChange={(v) => set('tagEidStart', v)} error={errors.tagEidStart} />
         <TextField id="tagEidEnd" label="EID tag - last number" value={form.tagEidEnd} onChange={(v) => set('tagEidEnd', v)} error={errors.tagEidEnd} />
+      </Section>
+
+      <Section title="Listing Notes" hint="Optional. Short notes about your cattle for buyers. They show on the listing and on the data sheet only when the box below is ticked.">
+        <Span>
+          <div className="mb-2 flex flex-wrap items-center gap-3">
+            <Button type="button" variant="outline" disabled={aiBusy} onClick={() => void writeNotes()}>
+              {aiBusy ? 'Writing...' : form.aiDescription.trim() ? 'Rewrite' : 'Write it for me'}
+            </Button>
+            {aiMessage && (
+              <p role="status" className="text-sm text-destructive">
+                {aiMessage}
+              </p>
+            )}
+          </div>
+          <TextArea
+            id="aiDescription"
+            label="Listing notes"
+            value={form.aiDescription}
+            onChange={(v) => setForm((f) => ({ ...f, aiDescription: v, includeAi: v.trim() ? f.includeAi : false }))}
+            error={errors.aiDescription}
+            rows={8}
+            hint="Up to 2000 characters. Edit it however you like. A blank line starts a new paragraph. Rewrite replaces what is here with new text."
+          />
+        </Span>
+        <Span>
+          <Check id="includeAi" label="Show these notes on my listing and the data sheet" checked={form.includeAi} disabled={!form.aiDescription.trim()} onChange={(v) => set('includeAi', v)} />
+        </Span>
       </Section>
 
       <Section title="Price">

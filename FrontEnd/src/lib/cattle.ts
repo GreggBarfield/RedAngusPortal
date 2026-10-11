@@ -78,3 +78,11 @@ export function breedText(l: { breeds: string[]; breedMode?: 'percent' | 'head' 
   if (!l.breedMode || !d || !d.some((x) => x.amount != null)) return l.breeds.join(', ')
   return d.map((x) => (x.amount == null ? x.name : l.breedMode === 'percent' ? `${x.name} ${x.amount}%` : `${x.name} (${x.amount} head)`)).join(', ')
 }
+
+
+// The Listing Notes text, when the seller chose to show it. Null otherwise.
+export function listingNotes(l: object): string | null {
+  const { aiDescription, includeAi } = l as { aiDescription?: string | null; includeAi?: boolean }
+  const text = typeof aiDescription === 'string' ? aiDescription.trim() : ''
+  return text && includeAi !== false ? text : null
+}

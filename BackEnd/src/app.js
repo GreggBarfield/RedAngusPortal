@@ -28,6 +28,7 @@ const { createDatasheet } = require('./datasheet');
 const { createFeedlotsRepo } = require('./feedlots');
 const { createFeedlotsRouter } = require('./routes/feedlots');
 const { createShowlist } = require('./showlistModule');
+const { createAiDescription } = require('./aiDescription');
 
 // createApp takes the database helper (and optionally config and any repo) as
 // arguments so tests can pass fakes. The old feeders/listings repos serve the
@@ -51,6 +52,7 @@ function createApp({
   datasheet = createDatasheet({ config, ref }),
   feedlots = createFeedlotsRepo(db),
   showlist = createShowlist({ db, config, users }),
+  ai = createAiDescription({ config, btn }),
   images,
   now,
 }) {
@@ -85,7 +87,7 @@ function createApp({
   const groupCounter = async (ownerId) =>
     (await feederListings.countByOwner(ownerId)) + (await breedingListings.countByOwner(ownerId));
   app.use('/api/ref', createRefRouter({ ref, users, config, groupCounter, now }));
-  app.use('/api/feeder-listings', createFeederListingsRouter({ feeders: feederListings, users, config, geo, datasheet, now }));
+  app.use('/api/feeder-listings', createFeederListingsRouter({ feeders: feederListings, users, config, geo, datasheet, ai, now }));
   app.use('/api/breeding-listings', createBreedingListingsRouter({ breeding: breedingListings, users, config, geo, now }));
   app.use('/api/saved-filters', createSavedFiltersRouter({ filters: savedFilters, users, config }));
 

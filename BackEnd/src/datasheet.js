@@ -120,6 +120,7 @@ function buildDatasheetHtml(l, assets) {
   const logo = assets.logo ? `<img src="${assets.logo}" class="logo">` : `<div class="fallback">${esc(FALLBACK_NAME)}</div>`;
   const place = placeText(l);
   const group = l.groupId ? l.groupId : '';
+  const notes = l.aiDescription && String(l.aiDescription).trim() ? `<div class="gap row"><b>Listing Notes:</b><div class="text">${esc(String(l.aiDescription).trim())}</div></div>` : '';
 
   return `<!doctype html>
 <html lang="en">
@@ -211,6 +212,7 @@ function buildDatasheetHtml(l, assets) {
   <b>Other Information from Seller:</b>
   <div class="text">${dash(l.description)}</div>
 </div>
+${notes}
 <hr>
 <p class="foot">${esc(FOOTER_TEXT)}</p>
 <p>Thank You</p>
