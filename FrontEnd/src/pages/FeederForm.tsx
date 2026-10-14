@@ -187,6 +187,20 @@ function toPayload(f: Form) {
   }
 }
 
+const FIRST_SPECIAL = ['red angus fccp', 'allied angus']
+
+// Special programs come from BTN in its own order. Put these two on top, in this order; the rest keep BTN's order.
+function orderSpecial(names: string[]): string[] {
+  const rank = (n: string) => {
+    const i = FIRST_SPECIAL.findIndex((p) => n.toLowerCase().includes(p))
+    return i === -1 ? FIRST_SPECIAL.length : i
+  }
+  return names
+    .map((n, i) => ({ n, i }))
+    .sort((a, b) => rank(a.n) - rank(b.n) || a.i - b.i)
+    .map((x) => x.n)
+}
+
 export default function FeederForm() {
   const { id } = useParams()
   const editing = Boolean(id)
@@ -219,7 +233,7 @@ export default function FeederForm() {
         if (cancelled) return
         setBreeds(b.breeds)
         setPc(p.programs.map((x) => x.name))
-        setSp(q.programs.map((x) => x.name))
+        setSp(orderSpecial(q.programs.map((x) => x.name)))
         setCountries(c.countries)
       } catch {
         if (!cancelled) setBanner('The pick lists (breeds and programs) could not be loaded. Reload the page to try again.')
@@ -342,7 +356,7 @@ export default function FeederForm() {
           onAmount={(b, v) => set('breedAmounts', { ...form.breedAmounts, [b]: v })}
         />
 
-        <TextField id="birthDate" label="Birth date" type="date" value={form.birthDate} onChange={(v) => set('birthDate', v)} error={errors.birthDate} />
+        <TextField id="birthDate" label="First Birth Date" type="date" value={form.birthDate} onChange={(v) => set('birthDate', v)} error={errors.birthDate} />
         <TextField id="weanDate" label="Wean date" type="date" value={form.weanDate} onChange={(v) => set('weanDate', v)} error={errors.weanDate} />
         <TextField id="vetName" label="Veterinarian" value={form.vetName} onChange={(v) => set('vetName', v)} error={errors.vetName} />
         <SelectField id="birthCountry" label="Country of birth" value={form.birthCountry} onChange={(v) => set('birthCountry', v)} error={errors.birthCountry} blank="Choose a country" options={countries.map((c) => [c, c])} />

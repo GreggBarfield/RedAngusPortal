@@ -35,7 +35,7 @@ function FeederBody({ l }: { l: FeederListing }) {
           <Row label="Total head" value={l.headCount} />
           <Row label="Average weight" value={weight} />
           <Row label="Breeds" value={breedText(l)} />
-          <Row label="Birth date" value={formatDate(l.birthDate)} />
+          <Row label="First Birth Date" value={formatDate(l.birthDate)} />
           <Row label="Age" value={l.ageMonths != null ? `${l.ageMonths} months` : null} />
           <Row label="Wean date" value={formatDate(l.weanDate)} />
           <Row label="Days weaned" value={l.daysWeaned} />
