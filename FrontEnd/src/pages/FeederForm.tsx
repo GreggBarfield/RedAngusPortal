@@ -4,7 +4,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Check, Field, FormBanner, Section, MultiSelect, SelectField, Span, TextArea, TextField } from '@/components/form'
 import MarketInsightsButton from '@/components/MarketInsights'
-import { AuctionPicker, BreedMakeup, ContactFields, PlaceFields, PriceFields, ProductPicker } from '@/components/formParts'
+import { AuctionPicker, BreedMakeup, ContactFields, PlaceFields, PriceFields, ProductPicker, useMarketPlace } from '@/components/formParts'
 import { Input } from '@/components/ui/input'
 import { MediaSection } from '@/components/Media'
 import { ApiError, getBreeds, getCattleListing, getCountries, getGroupId, getPrograms, saveCattleListing, writeListingNotes } from '@/lib/api'
@@ -224,6 +224,7 @@ export default function FeederForm() {
   const bannerRef = useRef<HTMLDivElement>(null)
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) => setForm((f) => ({ ...f, [key]: value }))
+  const mp = useMarketPlace(setForm)
 
   useEffect(() => {
     let cancelled = false
@@ -247,6 +248,7 @@ export default function FeederForm() {
             return
           }
           setForm(fromListing(r.listing))
+          mp.restore(s(r.listing.auctionName), r.listing.auctionNo)
           setPhotos(r.listing.photos ?? [])
           setDocs(r.listing.attachments ?? [])
         } catch {
@@ -266,6 +268,8 @@ export default function FeederForm() {
     return () => {
       cancelled = true
     }
+    // mp.restore only uses things that never change, so it is not a trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing, id, token, navigate])
 
   const total = (parseInt(form.steerCount, 10) || 0) + (parseInt(form.heiferCount, 10) || 0)
@@ -405,7 +409,10 @@ export default function FeederForm() {
       </Section>
 
       <Section title="Marketing Information">
-        <SelectField id="marketingMethod" label="Marketing method" value={form.marketingMethod} onChange={(v) => set('marketingMethod', v)} error={errors.marketingMethod} blank="Choose..." options={Object.entries(METHOD_LABELS)} />
+        <SelectField id="marketingMethod" label="Marketing method" value={form.marketingMethod} onChange={(v) => {
+          if (v !== 'auction' && v !== 'video_auction') mp.leave()
+          set('marketingMethod', v)
+        }} error={errors.marketingMethod} blank="Choose..." options={Object.entries(METHOD_LABELS)} />
         {auction ? (
           <AuctionPicker
             id="auctionName"
@@ -413,11 +420,11 @@ export default function FeederForm() {
             name={form.auctionName}
             token={token}
             error={errors.auctionName}
-            onPick={(name, no) => setForm((f) => ({ ...f, auctionName: name, auctionNo: no }))}
+            onPick={mp.pick}
           />
         ) : null}
         <TextField id="marketingDate" label="Marketing date" type="date" value={form.marketingDate} onChange={(v) => set('marketingDate', v)} error={errors.marketingDate} />
-        <PlaceFields state={form.state} zip={form.zip} errors={errors} onState={(v) => set('state', v)} onZip={(v) => set('zip', v)} />
+        <PlaceFields state={form.state} zip={form.zip} errors={errors} onState={(v) => set('state', v)} onZip={(v) => set('zip', v)} fixed={mp.fixed} marketNoZip={auction && mp.market != null && mp.fixed == null} />
         <Span cols="full">
           <MarketInsightsButton zip={form.zip} />
         </Span>

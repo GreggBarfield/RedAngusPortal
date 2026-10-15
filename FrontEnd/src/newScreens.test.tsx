@@ -86,7 +86,7 @@ function stubApi(handlers: Handler[], who: typeof member | null = member) {
     if (url.startsWith('/api/ref/group-id')) return [200, { groupId: 'MEMBER100' }]
     if (url.startsWith('/api/ref/zip/77845')) return [200, { zip: '77845', city: 'College Station', state: 'TX', lat: 30.6, lon: -96.3 }]
     if (url.startsWith('/api/ref/vaccine-products')) return [200, { products: [{ id: 1, name: 'Bovi-Shield Gold 5', company: 'Zoetis' }] }]
-    if (url.startsWith('/api/ref/auctions')) return [200, { auctions: [{ id: 1, auctionNo: 12, name: 'Bryan Livestock', zip: '77801' }] }]
+    if (url.startsWith('/api/ref/auctions')) return [200, { auctions: [{ id: 1, auctionNo: 12, name: 'Bryan Livestock', zip: '77801', city: 'Bryan', state: 'TX' }] }]
     if (url.includes('pending-count')) return [200, { pending: 2 }]
     return null
   }
@@ -357,6 +357,106 @@ describe('breeding listing form', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Submit for review' }))
     expect(await screen.findByRole('heading', { name: 'My listings' })).toBeInTheDocument()
     expect(body()).toMatchObject({ headCount: '3', sexClass: 'bull', breeds: ['Red Angus'], epds: [{ trait: 'BW', value: '1.5', unknown: false }], saleType: 'private_treaty', callForPrice: true })
+  })
+})
+
+describe('auction market fills in the location', () => {
+  const markets: Handler = (u) =>
+    u.startsWith('/api/ref/auctions?q=')
+      ? [
+          200,
+          {
+            auctions: [
+              { id: 1, auctionNo: 12, name: 'Bryan Livestock', zip: '77801', city: 'Bryan', state: 'TX' },
+              { id: 2, auctionNo: 13, name: 'Bryan No Zip Market', zip: null, city: null, state: null },
+            ],
+          },
+        ]
+      : null
+
+  // Type a few letters so the list loads, then pick the full name the way the browser's list does.
+  async function pickMarket(name: string) {
+    const box = await screen.findByLabelText('Auction market')
+    fireEvent.change(box, { target: { value: 'Bry' } })
+    await waitFor(() => expect(document.querySelector(`datalist option[value="${name}"]`)).not.toBeNull())
+    fireEvent.change(box, { target: { value: name } })
+  }
+
+  it('choosing a market shows its location and removes the state and zip boxes', async () => {
+    stubApi([markets])
+    mount('/list/feeder')
+    fireEvent.change(await screen.findByLabelText('Marketing method'), { target: { value: 'auction' } })
+    expect(screen.getByLabelText('Zip code')).toBeInTheDocument()
+    await pickMarket('Bryan Livestock')
+    expect(await screen.findByRole('group', { name: 'Location' })).toHaveTextContent('Bryan, TX 77801')
+    expect(screen.queryByLabelText('Zip code')).toBeNull()
+    expect(screen.queryByLabelText('State')).toBeNull()
+  })
+
+  it('a market with no zip on file keeps the boxes and says why', async () => {
+    stubApi([markets])
+    mount('/list/feeder')
+    fireEvent.change(await screen.findByLabelText('Marketing method'), { target: { value: 'auction' } })
+    await pickMarket('Bryan No Zip Market')
+    expect(await screen.findByText(/no zip code on file/i)).toBeInTheDocument()
+    expect(screen.getByLabelText('Zip code')).toHaveValue('')
+    expect(screen.getByLabelText('State')).toHaveValue('')
+    expect(screen.queryByRole('group', { name: 'Location' })).toBeNull()
+  })
+
+  it('leaving the auction methods gives back empty boxes, and a new market replaces the old location', async () => {
+    stubApi([markets])
+    mount('/list/feeder')
+    const method = await screen.findByLabelText('Marketing method')
+    fireEvent.change(method, { target: { value: 'auction' } })
+    await pickMarket('Bryan Livestock')
+    await screen.findByRole('group', { name: 'Location' })
+    // switch to a market with no zip: the old market's location must not stay
+    fireEvent.change(screen.getByLabelText('Auction market'), { target: { value: 'Bryan No Zip Market' } })
+    expect(await screen.findByLabelText('Zip code')).toHaveValue('')
+    expect(screen.getByLabelText('State')).toHaveValue('')
+    // pick the first again, then leave the auction methods
+    fireEvent.change(screen.getByLabelText('Auction market'), { target: { value: 'Bryan Livestock' } })
+    await screen.findByRole('group', { name: 'Location' })
+    fireEvent.change(method, { target: { value: 'off_ranch' } })
+    expect(await screen.findByLabelText('Zip code')).toHaveValue('')
+    expect(screen.getByLabelText('State')).toHaveValue('')
+    expect(screen.queryByLabelText('Auction market')).toBeNull()
+    // coming back, the market box starts empty
+    fireEvent.change(method, { target: { value: 'auction' } })
+    expect(screen.getByLabelText('Auction market')).toHaveValue('')
+  })
+
+  it('breeding: the chosen market sends its state and zip with the listing', async () => {
+    stubApi([
+      markets,
+      (u, i) => (u === '/api/breeding-listings' && i?.method === 'POST' ? [201, { listing: breeding }] : null),
+      (u) => (u.includes('/mine') ? [200, { listings: [] }] : null),
+    ])
+    mount('/list/breeding')
+    fireEvent.change(await screen.findByLabelText('Number of head'), { target: { value: '3' } })
+    fireEvent.change(screen.getByLabelText('Sex / class'), { target: { value: 'bull' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Breed(s)' }))
+    fireEvent.click(screen.getByLabelText('Red Angus'))
+    fireEvent.change(screen.getByLabelText('Sale type'), { target: { value: 'auction' } })
+    fireEvent.change(screen.getByLabelText('Sale date'), { target: { value: '2026-11-15' } })
+    await pickMarket('Bryan Livestock')
+    expect(await screen.findByRole('group', { name: 'Location' })).toHaveTextContent('Bryan, TX 77801')
+    fireEvent.click(screen.getByLabelText('Call for price'))
+    fireEvent.click(screen.getByRole('button', { name: 'Submit for review' }))
+    expect(await screen.findByRole('heading', { name: 'My listings' })).toBeInTheDocument()
+    expect(body()).toMatchObject({ saleType: 'auction', auctionName: 'Bryan Livestock', auctionNo: 12, state: 'TX', zip: '77801' })
+  })
+
+  it('editing a saved listing finds its market again and shows the location', async () => {
+    const mine = { ...feederMember, mine: true, zip: '77801', marketingMethod: 'auction', auctionNo: 12, auctionName: 'Bryan Livestock' }
+    stubApi([
+      markets,
+      (u, i) => (u === '/api/feeder-listings/9' && !i?.method ? [200, { listing: mine }] : null),
+    ])
+    mount('/list/feeder/9/edit')
+    expect(await screen.findByRole('group', { name: 'Location' })).toHaveTextContent('Bryan, TX 77801')
+    expect(screen.getByLabelText('Auction market')).toHaveValue('Bryan Livestock')
   })
 })
 

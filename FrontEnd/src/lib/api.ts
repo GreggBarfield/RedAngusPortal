@@ -425,6 +425,9 @@ export interface AuctionMarket {
   auctionNo: number | null
   name: string
   zip: string | null
+  // From BTN's zip table. Null when the market has no zip, or the zip is not in the table.
+  city?: string | null
+  state?: string | null
 }
 export interface ZipInfo {
   zip: string

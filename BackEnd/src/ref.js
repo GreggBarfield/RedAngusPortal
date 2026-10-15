@@ -22,6 +22,16 @@ function createRefRepo({ btn, now = () => Date.now() }) {
     return value;
   }
 
+  // Adds the city and state of the market's zip (null when it has none or it is not in the table).
+  async function withPlace(auction) {
+    const zip = typeof auction.zip === 'string' ? auction.zip.trim() : '';
+    if (!/^\d{5}$/.test(zip)) return { ...auction, city: null, state: null };
+    const r = await ask('SELECT city, state_code AS state FROM public.zip_codes WHERE zip = $1', [zip]);
+    const row = r.rows[0];
+    if (!row) return { ...auction, city: null, state: null };
+    return { ...auction, city: row.city, state: String(row.state).trim().toUpperCase() };
+  }
+
   return {
     available: () => btn.canRef(),
     clearCache: () => cache.clear(),
@@ -72,19 +82,29 @@ function createRefRepo({ btn, now = () => Date.now() }) {
       return r.rows;
     },
 
+    // Each market comes with the city and state of its zip (from BTN's zip table),
+    // so the listing forms can fill in the location. city and state are null when
+    // the market has no zip, or the zip is not in the table.
     async auctions(q) {
       const params = [];
-      let where = 'auc_active';
+      let where = 'a.auc_active';
       if (q) {
         params.push(likePattern(q));
-        where += ' AND auc_name ILIKE $1';
+        where += ' AND a.auc_name ILIKE $1';
       }
       const r = await ask(
-        `SELECT id, auction_no AS "auctionNo", auc_name AS name, auc_zip AS zip FROM public.feeder_ref_auctions
-         WHERE ${where} ORDER BY auc_name LIMIT 50`,
+        `SELECT a.id, a.auction_no AS "auctionNo", a.auc_name AS name, a.auc_zip AS zip,
+                z.city AS city, z.state_code AS state
+         FROM public.feeder_ref_auctions a
+         LEFT JOIN LATERAL (
+           SELECT city, state_code FROM public.zip_codes
+           WHERE btrim(a.auc_zip) <> '' AND lpad(zip::text, 5, '0') = lpad(btrim(a.auc_zip), 5, '0')
+           LIMIT 1
+         ) z ON true
+         WHERE ${where} ORDER BY a.auc_name LIMIT 50`,
         params,
       );
-      return r.rows;
+      return r.rows.map((x) => ({ ...x, state: x.state == null ? null : String(x.state).trim().toUpperCase() }));
     },
 
     async zip(zip) {
@@ -127,13 +147,13 @@ function createRefRepo({ btn, now = () => Date.now() }) {
           [name],
         );
       const found = await find();
-      if (found.rows[0]) return { created: false, auction: found.rows[0] };
+      if (found.rows[0]) return { created: false, auction: await withPlace(found.rows[0]) };
       const ins = await ask(
         `INSERT INTO public.feeder_ref_auctions (auc_name, auc_zip, is_custom) VALUES ($1, $2, true)
          RETURNING id, auction_no AS "auctionNo", auc_name AS name, auc_zip AS zip`,
         [name, zip],
       );
-      return { created: true, auction: ins.rows[0] };
+      return { created: true, auction: await withPlace(ins.rows[0]) };
     },
   };
 }

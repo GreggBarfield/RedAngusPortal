@@ -7,7 +7,7 @@ import { Select } from '@/components/ui/select'
 import { MediaSection } from '@/components/Media'
 import { Check, Field, MultiSelect, FormBanner, Section, SelectField, Span, TextArea, TextField } from '@/components/form'
 import MarketInsightsButton from '@/components/MarketInsights'
-import { AuctionPicker, ContactFields, PlaceFields, PriceFields } from '@/components/formParts'
+import { AuctionPicker, ContactFields, PlaceFields, PriceFields, useMarketPlace } from '@/components/formParts'
 import { ApiError, getBreeds, getCattleListing, getEpdTraits, saveCattleListing } from '@/lib/api'
 import type { BreedingListing, EpdTrait, ListingAttachment, ListingPhoto } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
@@ -159,6 +159,7 @@ export default function BreedingForm() {
   const bannerRef = useRef<HTMLDivElement>(null)
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) => setForm((f) => ({ ...f, [key]: value }))
+  const mp = useMarketPlace(setForm)
 
   useEffect(() => {
     let cancelled = false
@@ -180,6 +181,7 @@ export default function BreedingForm() {
             return
           }
           setForm(fromListing(r.listing))
+          mp.restore(s(r.listing.auctionName), r.listing.auctionNo)
           setPhotos(r.listing.photos ?? [])
           setDocs(r.listing.attachments ?? [])
         } catch {
@@ -192,6 +194,8 @@ export default function BreedingForm() {
     return () => {
       cancelled = true
     }
+    // mp.restore only uses things that never change, so it is not a trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editing, id, token, navigate])
 
   const auction = form.saleType === 'auction' || form.saleType === 'video_auction'
@@ -311,12 +315,15 @@ export default function BreedingForm() {
         <Span cols={2}>
           <TextField id="saleTitle" label="Sale title" value={form.saleTitle} onChange={(v) => set('saleTitle', v)} error={errors.saleTitle} hint="Optional - the name of your sale or offering." />
         </Span>
-        <SelectField id="saleType" label="Sale type" value={form.saleType} onChange={(v) => set('saleType', v)} error={errors.saleType} blank="Choose..." options={Object.entries(SALE_TYPE_LABELS)} />
+        <SelectField id="saleType" label="Sale type" value={form.saleType} onChange={(v) => {
+          if (v !== 'auction' && v !== 'video_auction') mp.leave()
+          set('saleType', v)
+        }} error={errors.saleType} blank="Choose..." options={Object.entries(SALE_TYPE_LABELS)} />
         <TextField id="saleDate" label="Sale date" type="date" value={form.saleDate} onChange={(v) => set('saleDate', v)} error={errors.saleDate} />
         {auction && (
-          <AuctionPicker id="auctionName" label="Auction market" name={form.auctionName} token={token} error={errors.auctionName} onPick={(name, no) => setForm((f) => ({ ...f, auctionName: name, auctionNo: no }))} />
+          <AuctionPicker id="auctionName" label="Auction market" name={form.auctionName} token={token} error={errors.auctionName} onPick={mp.pick} />
         )}
-        <PlaceFields state={form.state} zip={form.zip} errors={errors} onState={(v) => set('state', v)} onZip={(v) => set('zip', v)} />
+        <PlaceFields state={form.state} zip={form.zip} errors={errors} onState={(v) => set('state', v)} onZip={(v) => set('zip', v)} fixed={mp.fixed} marketNoZip={auction && mp.market != null && mp.fixed == null} />
         <Span cols="full">
           <MarketInsightsButton zip={form.zip} />
         </Span>

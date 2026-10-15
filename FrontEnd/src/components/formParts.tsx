@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -11,25 +12,96 @@ import { cn } from '@/lib/utils'
 
 type Errors = Record<string, string>
 
+// Where the cattle are when they go through an auction market: the market's own location.
+export interface FixedPlace {
+  city: string | null
+  state: string
+  zip: string
+}
+
+// The market's location, or null when the market has no zip (or its zip is not in the zip table),
+// in which case the seller still types the state and zip.
+export function fixedPlace(market: AuctionMarket | null): FixedPlace | null {
+  if (!market || !market.zip || !market.state) return null
+  return { city: market.city ?? null, state: market.state, zip: market.zip }
+}
+
+interface PlaceForm {
+  auctionName: string
+  auctionNo: number | null
+  state: string
+  zip: string
+}
+
+// Used by the listing forms. Remembers which auction market was chosen and keeps the form's
+// state and zip in step with it, so the seller never has to type the market's location.
+export function useMarketPlace<F extends PlaceForm>(setForm: Dispatch<SetStateAction<F>>) {
+  const [market, setMarket] = useState<AuctionMarket | null>(null)
+  const fixed = fixedPlace(market)
+
+  // A market name was typed or chosen (market is null while the name is not a match).
+  function pick(name: string, auctionNo: number | null, m: AuctionMarket | null) {
+    const next = fixedPlace(m)
+    setMarket(m)
+    setForm((f) => {
+      const base = { ...f, auctionName: name, auctionNo }
+      if (next) return { ...base, state: next.state, zip: next.zip }
+      // The location came from the market that was chosen before, so it goes with it.
+      return fixed ? { ...base, state: '', zip: '' } : base
+    })
+  }
+
+  // The marketing method is not an auction any more: forget the market and its location.
+  function leave() {
+    if (!market) return
+    setMarket(null)
+    setForm((f) => ({ ...f, auctionName: '', auctionNo: null, ...(fixed ? { state: '', zip: '' } : {}) }))
+  }
+
+  // A saved listing is being edited: find its market again so its location shows as before.
+  function restore(name: string, auctionNo: number | null) {
+    if (auctionNo == null || !name) return
+    getAuctions(name)
+      .then((r) => {
+        const m = r.auctions.find((a) => a.auctionNo === auctionNo) ?? null
+        const next = fixedPlace(m)
+        if (!m) return
+        setMarket(m)
+        if (next) setForm((f) => ({ ...f, state: next.state, zip: next.zip }))
+      })
+      .catch(() => {
+        // The state and zip saved with the listing stay as they are.
+      })
+  }
+
+  return { market, fixed, pick, leave, restore }
+}
+
 // State and zip of the cattle. The zip is looked up so the city shows up and the state can be filled in.
+// When an auction market was chosen, its location is shown instead and nothing needs typing.
 export function PlaceFields({
   state,
   zip,
   errors,
   onState,
   onZip,
+  fixed = null,
+  marketNoZip = false,
 }: {
   state: string
   zip: string
   errors: Errors
   onState: (v: string) => void
   onZip: (v: string) => void
+  fixed?: FixedPlace | null
+  marketNoZip?: boolean
 }) {
   const [city, setCity] = useState('')
   const [lookupError, setLookupError] = useState('')
+  const isFixed = fixed != null
 
   useEffect(() => {
-    if (!/^\d{5}$/.test(zip)) {
+    if (isFixed || !/^\d{5}$/.test(zip)) {
       setCity('')
       setLookupError('')
       return
@@ -52,7 +124,19 @@ export function PlaceFields({
     }
     // The state is only filled in when it is blank, so it is not a trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zip])
+  }, [zip, isFixed])
+
+  if (fixed) {
+    return (
+      <Span cols={2}>
+        <div role="group" aria-label="Location" className="grid gap-1.5">
+          <p className="text-sm font-medium leading-none">Location</p>
+          <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm">{`${fixed.city ? fixed.city + ', ' : ''}${fixed.state} ${fixed.zip}`}</p>
+          <p className="text-xs text-muted-foreground">From the auction market you chose. Only you and our staff see the zip code. It is used for distance searches.</p>
+        </div>
+      </Span>
+    )
+  }
 
   return (
     <>
@@ -63,7 +147,13 @@ export function PlaceFields({
         value={zip}
         onChange={(v) => onZip(v.replace(/\D/g, '').slice(0, 5))}
         error={errors.zip || lookupError}
-        hint={city ? `Location: ${city}` : 'Only you and our staff see the zip code. It is used for distance searches.'}
+        hint={
+          city
+            ? `Location: ${city}`
+            : marketNoZip
+              ? 'This auction market has no zip code on file. Enter the state and zip code of the market. Only you and our staff see the zip code.'
+              : 'Only you and our staff see the zip code. It is used for distance searches.'
+        }
         inputMode="numeric"
       />
     </>
@@ -202,7 +292,8 @@ export function AuctionPicker({
   name: string
   token: string | null
   error?: string
-  onPick: (name: string, auctionNo: number | null) => void
+  // market is the matching entry of BTN's list (with its location), or null while the name is not a match.
+  onPick: (name: string, auctionNo: number | null, market: AuctionMarket | null) => void
 }) {
   const [results, setResults] = useState<AuctionMarket[]>([])
   const [adding, setAdding] = useState(false)
@@ -241,7 +332,7 @@ export function AuctionPicker({
           onChange={(e) => {
             const v = e.target.value
             const hit = results.find((a) => a.name === v)
-            onPick(v, hit ? hit.auctionNo : null)
+            onPick(v, hit ? hit.auctionNo : null, hit ?? null)
           }}
         />
         <datalist id={`${id}-list`}>
@@ -264,7 +355,7 @@ export function AuctionPicker({
             onCancel={() => setAdding(false)}
             onSave={async (n, zip) => {
               const r = await addAuction(n, zip || null, token ?? '')
-              onPick(r.auction.name, r.auction.auctionNo)
+              onPick(r.auction.name, r.auction.auctionNo, r.auction)
               setAdding(false)
             }}
           />

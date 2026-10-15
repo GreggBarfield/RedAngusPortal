@@ -36,9 +36,9 @@ maybe('ref repo (real Postgres, limited login)', () => {
       UPDATE public.feeder_ref_programs SET is_active = false WHERE prog_name = 'Old';
       INSERT INTO public.feeder_ref_medications (rx_name, rx_company) VALUES ('Bovi-Shield Gold 5', 'Zoetis'), ('Ultrabac 7', 'Zoetis');
       INSERT INTO public.feeder_ref_auctions (auction_no, auc_name, auc_zip) VALUES (1, 'Bryan Livestock', '77801'), (2, '100% Cattle_Market', '59101');
+      INSERT INTO public.feeder_ref_auctions (auction_no, auc_name, auc_zip) VALUES (3, 'No Zip Market', NULL), (4, 'Blank Zip Market', '');
       INSERT INTO public.ref_epd_traits (trait_code, display_name, unit, sort_order) VALUES ('BW', 'Birth Weight', 'lb', 1), ('WW', 'Weaning Weight', 'lb', 2);
-      INSERT INTO public.zip_codes VALUES ('77845', 'College Station', 'TX', 30.5844, -96.2935);
-      GRANT USAGE ON SCHEMA public TO ${ROLE};
+      INSERT INTO public.zip_codes VALUES ('77845', 'College Station', 'TX', 30.5844, -96.2935), ('77801', 'Bryan', 'TX', 30.6744, -96.3698);      GRANT USAGE ON SCHEMA public TO ${ROLE};
       REVOKE ALL ON ALL TABLES IN SCHEMA public FROM ${ROLE};
       GRANT SELECT (id, name, is_active, sort_order) ON public.feeder_ref_breeds TO ${ROLE};
       GRANT SELECT (id, prog_name, prog_type, prog_image, is_active, sort_order) ON public.feeder_ref_programs TO ${ROLE};
@@ -86,6 +86,16 @@ maybe('ref repo (real Postgres, limited login)', () => {
     expect((await repo.vaccineProducts('shield')).map((p) => p.name)).toEqual(['Bovi-Shield Gold 5']);
   });
 
+  test('each auction market comes with the city and state of its zip', async () => {
+    const by = Object.fromEntries((await repo.auctions('')).map((a) => [a.name, a]));
+    expect(by['Bryan Livestock']).toMatchObject({ zip: '77801', city: 'Bryan', state: 'TX' });
+    // zip not in the zip table: no city or state
+    expect(by['100% Cattle_Market']).toMatchObject({ zip: '59101', city: null, state: null });
+    // no zip, or a blank zip: no city or state
+    expect(by['No Zip Market']).toMatchObject({ zip: null, city: null, state: null });
+    expect(by['Blank Zip Market']).toMatchObject({ zip: '', city: null, state: null });
+  });
+
   test('adding a product works under column grants, and a repeat in other capitals returns the existing one', async () => {
     const a = await repo.addVaccineProduct({ name: 'Vira Shield 6', company: 'Elanco' });
     expect(a).toMatchObject({ created: true, product: { name: 'Vira Shield 6', company: 'Elanco' } });
@@ -100,8 +110,10 @@ maybe('ref repo (real Postgres, limited login)', () => {
     const a = await repo.addAuction({ name: 'Mid State Market', zip: '77845' });
     expect(a.created).toBe(true);
     expect(a.auction.auctionNo).toBeNull();
+    expect(a.auction).toMatchObject({ zip: '77845', city: 'College Station', state: 'TX' });
     const second = await repo.addAuction({ name: 'Another Market', zip: null });
     expect(second.created).toBe(true);
+    expect(second.auction).toMatchObject({ zip: null, city: null, state: null });
     expect((await repo.addAuction({ name: 'MID STATE MARKET', zip: null })).created).toBe(false);
   });
 
