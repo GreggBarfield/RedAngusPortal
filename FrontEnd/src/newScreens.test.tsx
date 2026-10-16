@@ -393,6 +393,16 @@ describe('auction market fills in the location', () => {
     expect(screen.queryByLabelText('State')).toBeNull()
   })
 
+  it('typing the whole name at once finds the market when the list arrives afterwards', async () => {
+    stubApi([markets])
+    mount('/list/feeder')
+    fireEvent.change(await screen.findByLabelText('Marketing method'), { target: { value: 'auction' } })
+    // No list has loaded yet when the full name is typed, so nothing matched at that moment.
+    fireEvent.change(await screen.findByLabelText('Auction market'), { target: { value: 'Bryan Livestock' } })
+    expect(await screen.findByRole('group', { name: 'Location' })).toHaveTextContent('Bryan, TX 77801')
+    expect(screen.queryByLabelText('Zip code')).toBeNull()
+  })
+
   it('a market with no zip on file keeps the boxes and says why', async () => {
     stubApi([markets])
     mount('/list/feeder')

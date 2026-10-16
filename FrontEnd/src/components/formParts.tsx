@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -298,6 +298,12 @@ export function AuctionPicker({
   const [results, setResults] = useState<AuctionMarket[]>([])
   const [adding, setAdding] = useState(false)
   const q = useDebounced(name)
+  // The list arrives a moment after the typing stops, so the match is also checked when it arrives.
+  const nameRef = useRef(name)
+  nameRef.current = name
+  const onPickRef = useRef(onPick)
+  onPickRef.current = onPick
+  const pickedNo = useRef<number | null>(null)
 
   useEffect(() => {
     if (q.trim().length < 2) {
@@ -307,7 +313,14 @@ export function AuctionPicker({
     let cancelled = false
     getAuctions(q.trim())
       .then((r) => {
-        if (!cancelled) setResults(r.auctions)
+        if (cancelled) return
+        setResults(r.auctions)
+        const typed = nameRef.current.trim().toLowerCase()
+        const hit = r.auctions.find((a) => a.name.trim().toLowerCase() === typed)
+        if (hit && pickedNo.current !== hit.auctionNo) {
+          pickedNo.current = hit.auctionNo
+          onPickRef.current(hit.name, hit.auctionNo, hit)
+        }
       })
       .catch(() => {
         if (!cancelled) setResults([])
@@ -331,7 +344,9 @@ export function AuctionPicker({
           aria-invalid={error ? true : undefined}
           onChange={(e) => {
             const v = e.target.value
-            const hit = results.find((a) => a.name === v)
+            const typed = v.trim().toLowerCase()
+            const hit = results.find((a) => a.name.trim().toLowerCase() === typed)
+            pickedNo.current = hit ? hit.auctionNo : null
             onPick(v, hit ? hit.auctionNo : null, hit ?? null)
           }}
         />
@@ -355,6 +370,7 @@ export function AuctionPicker({
             onCancel={() => setAdding(false)}
             onSave={async (n, zip) => {
               const r = await addAuction(n, zip || null, token ?? '')
+              pickedNo.current = r.auction.auctionNo
               onPick(r.auction.name, r.auction.auctionNo, r.auction)
               setAdding(false)
             }}
