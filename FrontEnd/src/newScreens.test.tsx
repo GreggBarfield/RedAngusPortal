@@ -386,7 +386,10 @@ describe('auction market fills in the location', () => {
     stubApi([markets])
     mount('/list/feeder')
     fireEvent.change(await screen.findByLabelText('Marketing method'), { target: { value: 'auction' } })
-    expect(screen.getByLabelText('Zip code')).toBeInTheDocument()
+    // Nothing to type: the boxes are gone as soon as an auction method is chosen.
+    expect(screen.queryByLabelText('Zip code')).toBeNull()
+    expect(screen.queryByLabelText('State')).toBeNull()
+    expect(screen.getByText(/state and zip code fill in by themselves/i)).toBeInTheDocument()
     await pickMarket('Bryan Livestock')
     expect(await screen.findByRole('group', { name: 'Location' })).toHaveTextContent('Bryan, TX 77801')
     expect(screen.queryByLabelText('Zip code')).toBeNull()

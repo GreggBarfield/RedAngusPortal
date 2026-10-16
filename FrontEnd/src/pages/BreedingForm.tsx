@@ -323,7 +323,7 @@ export default function BreedingForm() {
         {auction && (
           <AuctionPicker id="auctionName" label="Auction market" name={form.auctionName} token={token} error={errors.auctionName} onPick={mp.pick} />
         )}
-        <PlaceFields state={form.state} zip={form.zip} errors={errors} onState={(v) => set('state', v)} onZip={(v) => set('zip', v)} fixed={mp.fixed} marketNoZip={auction && mp.market != null && mp.fixed == null} />
+        <PlaceFields state={form.state} zip={form.zip} errors={errors} onState={(v) => set('state', v)} onZip={(v) => set('zip', v)} fixed={mp.fixed} marketNoZip={auction && mp.market != null && mp.fixed == null} awaitMarket={auction && mp.market == null && !(form.state && form.zip)} />
         <Span cols="full">
           <MarketInsightsButton zip={form.zip} />
         </Span>

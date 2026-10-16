@@ -87,6 +87,7 @@ export function PlaceFields({
   onZip,
   fixed = null,
   marketNoZip = false,
+  awaitMarket = false,
 }: {
   state: string
   zip: string
@@ -95,6 +96,8 @@ export function PlaceFields({
   onZip: (v: string) => void
   fixed?: FixedPlace | null
   marketNoZip?: boolean
+  // An auction method is chosen but no market yet: there is nothing to type, the market will supply it.
+  awaitMarket?: boolean
 }) {
   const [city, setCity] = useState('')
   const [lookupError, setLookupError] = useState('')
@@ -133,6 +136,19 @@ export function PlaceFields({
           <p className="text-sm font-medium leading-none">Location</p>
           <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm">{`${fixed.city ? fixed.city + ', ' : ''}${fixed.state} ${fixed.zip}`}</p>
           <p className="text-xs text-muted-foreground">From the auction market you chose. Only you and our staff see the zip code. It is used for distance searches.</p>
+        </div>
+      </Span>
+    )
+  }
+
+  if (awaitMarket) {
+    const problem = errors.state || errors.zip
+    return (
+      <Span cols={2}>
+        <div role="group" aria-label="Location comes from the market" className="grid gap-1.5">
+          <p className="text-sm font-medium leading-none">Location</p>
+          <p className="text-xs text-muted-foreground">Choose the auction market and its state and zip code fill in by themselves.</p>
+          {problem ? <p className="text-xs text-destructive">{problem}</p> : null}
         </div>
       </Span>
     )
